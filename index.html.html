@@ -1,0 +1,1400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Expense Tracker</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@500;600;700;800&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#FAF7F0; --paper:#FFFFFF; --ink:#1C1B18; --sub:#7A7568; --line:#EAE4D6;
+  --accent:#E8A23D; --accent-ink:#5A3B0A; --indigo:#4338CA; --green:#1C8A4C; --red:#D2483A;
+  --chip:#F3EDE0; --shadow:0 1px 2px rgba(28,27,24,.04), 0 8px 24px -12px rgba(28,27,24,.12);
+  --radius:18px; --radius-sm:12px;
+  --font-display:'Lexend',sans-serif; --font-body:'Inter',sans-serif; --font-mono:'JetBrains Mono',monospace;
+}
+[data-theme="dark"]{
+  --bg:#14151C; --paper:#1C1E27; --ink:#F2EFE6; --sub:#93907F; --line:#2B2D38;
+  --accent:#F0B45C; --accent-ink:#2A1D06; --indigo:#8B85F5; --green:#3FCB7C; --red:#F17263;
+  --chip:#262838; --shadow:0 1px 2px rgba(0,0,0,.3), 0 12px 30px -14px rgba(0,0,0,.55);
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);transition:background .2s,color .2s}
+h1,h2,h3{font-family:var(--font-display);margin:0}
+.mono{font-family:var(--font-mono)}
+button{font-family:var(--font-body)}
+
+/* App shell */
+.appbar{max-width:900px;margin:auto;padding:20px 16px 8px;display:flex;align-items:center;justify-content:space-between}
+.brand{display:flex;align-items:center;gap:10px}
+.brand .mark{width:36px;height:36px;border-radius:11px;background:linear-gradient(155deg,var(--accent),#C97A1F);display:flex;align-items:center;justify-content:center;font-size:18px;box-shadow:var(--shadow)}
+.brand b{font-family:var(--font-display);font-size:19px}
+.brand span{display:block;font-size:11px;color:var(--sub)}
+.iconbtn{width:40px;height:40px;border-radius:12px;background:var(--paper);border:1px solid var(--line);display:flex;align-items:center;justify-content:center;cursor:pointer;font-size:17px;box-shadow:var(--shadow)}
+
+.wrap{max-width:900px;margin:auto;padding:8px 16px 100px}
+.section{display:none}.section.active{display:block;animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:none}}
+
+/* Cards */
+.card{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:18px;margin-bottom:14px;box-shadow:var(--shadow)}
+.card h2{font-size:15px;margin-bottom:10px}
+.card h2 .small{font-family:var(--font-body);font-weight:500;color:var(--sub);font-size:12px}
+
+/* Hero balance */
+.hero{background:linear-gradient(155deg,var(--indigo),#2C2494);color:#fff;border-radius:22px;padding:22px 20px;margin-bottom:14px;position:relative;overflow:hidden}
+.hero::after{content:"";position:absolute;right:-40px;top:-40px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,.08)}
+.hero .lbl{font-size:12px;opacity:.75;letter-spacing:.02em}
+.hero .amt{font-family:var(--font-display);font-size:36px;font-weight:700;margin:4px 0 14px;font-variant-numeric:tabular-nums}
+.hero .row{display:flex;gap:18px;position:relative;z-index:1}
+.hero .row div{flex:1}
+.hero .row .k{font-size:11px;opacity:.7}
+.hero .row .v{font-family:var(--font-mono);font-weight:700;font-size:15px;margin-top:2px}
+
+.cards4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.metric span{font-size:11px;color:var(--sub);display:block}
+.metric b{display:block;font-family:var(--font-mono);font-size:18px;margin-top:6px;font-weight:700}
+.metric .delta{font-size:11px;margin-top:4px;display:inline-block;padding:2px 7px;border-radius:20px}
+.delta.up{background:#FDECEA;color:var(--red)}.delta.down{background:#E8F7EE;color:var(--green)}
+[data-theme="dark"] .delta.up{background:#3A2321}[data-theme="dark"] .delta.down{background:#183527}
+
+/* Pulse strip (spending heatmap) */
+.pulse{display:grid;grid-template-columns:repeat(15,1fr);gap:4px}
+.pulse .d{aspect-ratio:1;border-radius:5px;background:var(--chip)}
+.pulse-legend{display:flex;justify-content:space-between;font-size:11px;color:var(--sub);margin-top:8px}
+
+/* Bottom nav */
+.navbar{position:fixed;left:0;right:0;bottom:0;background:var(--paper);border-top:1px solid var(--line);display:flex;z-index:20;padding:6px 6px calc(6px + env(safe-area-inset-bottom))}
+.navbar button{flex:1;background:none;border:0;display:flex;flex-direction:column;align-items:center;gap:2px;padding:7px 2px;border-radius:12px;color:var(--sub);font-size:10px;cursor:pointer}
+.navbar button .ic{font-size:19px}
+.navbar button.active{color:var(--accent-ink);background:var(--chip)}
+[data-theme="dark"] .navbar button.active{color:var(--accent)}
+.fab{position:fixed;right:18px;bottom:76px;width:56px;height:56px;border-radius:18px;background:var(--accent);color:var(--accent-ink);border:0;font-size:24px;box-shadow:var(--shadow);cursor:pointer;z-index:20}
+.aifab{position:fixed;left:18px;bottom:76px;width:52px;height:52px;border-radius:50%;background:var(--indigo);color:#fff;border:0;font-size:20px;box-shadow:var(--shadow);cursor:pointer;z-index:20}
+
+/* Forms */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:9px}.full{grid-column:1/-1}
+label{font-size:12px;color:var(--sub);display:block;margin-bottom:3px}
+input,select{width:100%;padding:11px;border:1px solid var(--line);border-radius:10px;margin:0 0 8px;background:var(--bg);color:var(--ink);font-family:var(--font-body);font-size:14px}
+.chiprow{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:8px}
+.chip{padding:7px 12px;border-radius:20px;background:var(--chip);font-size:12.5px;cursor:pointer;border:1px solid transparent;user-select:none}
+.chip.sel{background:var(--accent);color:var(--accent-ink);border-color:var(--accent-ink)}
+
+.actions{display:flex;gap:7px;flex-wrap:wrap}
+.actions button,.nav button,button.btn{border:0;border-radius:11px;padding:11px 14px;font-weight:700;cursor:pointer;font-size:13.5px}
+.primary{background:var(--ink);color:var(--bg)}
+[data-theme="dark"] .primary{background:var(--accent);color:var(--accent-ink)}
+.danger{background:var(--red);color:#fff}.light{background:var(--chip);color:var(--ink)}.green{background:var(--green);color:#fff}
+.actions button{flex:1;min-width:100px}
+
+/* Transaction row */
+.tx{display:grid;grid-template-columns:36px 1fr auto;gap:11px;align-items:center;border-bottom:1px solid var(--line);padding:12px 0}
+.tx:last-child{border-bottom:0}
+.tx .ico{width:36px;height:36px;border-radius:11px;background:var(--chip);display:flex;align-items:center;justify-content:center;font-size:16px}
+.tx .amount{font-family:var(--font-mono);font-weight:700}
+.tx .amount.pos{color:var(--green)}.tx .amount.neg{color:var(--ink)}
+.cat{font-size:11px;background:var(--chip);border-radius:15px;padding:3px 8px;display:inline-block;color:var(--sub)}
+.small{font-size:12px;color:var(--sub)}
+.rowbtns{display:flex;gap:5px;margin-top:6px}
+.rowbtns button{padding:5px 9px;font-size:11px;border-radius:8px;border:0;background:var(--chip);cursor:pointer}
+
+.progress{height:9px;background:var(--chip);border-radius:20px;overflow:hidden}.progress div{height:100%;background:var(--accent);width:0;transition:width .3s}
+.bar{height:10px;background:var(--chip);border-radius:6px;margin:6px 0;overflow:hidden}.bar div{height:100%;background:var(--indigo)}
+.empty{text-align:center;padding:34px 10px;color:var(--sub)}
+
+/* Insight card */
+.insight{background:linear-gradient(155deg,var(--chip),transparent);border:1px solid var(--line);border-radius:14px;padding:13px 14px;margin-bottom:9px;font-size:13.5px;line-height:1.5}
+.insight b{color:var(--accent-ink)}
+[data-theme="dark"] .insight b{color:var(--accent)}
+
+/* Donut */
+.donut-wrap{display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.legend{flex:1;min-width:150px}
+.legend .li{display:flex;align-items:center;gap:8px;font-size:12.5px;padding:4px 0}
+.legend .sw{width:10px;height:10px;border-radius:3px;flex-shrink:0}
+
+/* Goal card */
+.goal{border:1px solid var(--line);border-radius:14px;padding:14px;margin-bottom:10px}
+.goal .top{display:flex;justify-content:space-between;align-items:center;margin-bottom:6px}
+.goal .top b{font-family:var(--font-display);font-size:15px}
+
+/* Modal */
+.modal{display:none;position:fixed;inset:0;background:rgba(20,18,10,.5);z-index:30;align-items:flex-end;justify-content:center;padding:0}
+.modal.open{display:flex}
+.modalbox{background:var(--paper);padding:20px 18px calc(18px + env(safe-area-inset-bottom));border-radius:22px 22px 0 0;width:100%;max-width:520px;max-height:88vh;overflow:auto}
+@media(min-width:600px){.modal{align-items:center;padding:15px}.modalbox{border-radius:20px}}
+.modaltop{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.closex{background:var(--chip);border:0;width:30px;height:30px;border-radius:50%;cursor:pointer;font-size:14px}
+
+/* Chat */
+.chatpanel{position:fixed;inset:0;background:rgba(20,18,10,.5);z-index:40;display:none;align-items:flex-end;justify-content:center}
+.chatpanel.open{display:flex}
+.chatbox{background:var(--paper);width:100%;max-width:480px;height:78vh;border-radius:22px 22px 0 0;display:flex;flex-direction:column;overflow:hidden}
+@media(min-width:600px){.chatpanel{align-items:center}.chatbox{border-radius:20px;height:70vh}}
+.chathead{padding:15px 16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;background:var(--indigo);color:#fff}
+.chatmsgs{flex:1;overflow:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
+.msg{max-width:80%;padding:10px 13px;border-radius:14px;font-size:13.5px;line-height:1.45}
+.msg.bot{background:var(--chip);align-self:flex-start;border-bottom-left-radius:4px}
+.msg.user{background:var(--indigo);color:#fff;align-self:flex-end;border-bottom-right-radius:4px}
+.chatsug{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
+.chatsug button{background:var(--chip);border:1px solid var(--line);border-radius:20px;padding:6px 11px;font-size:11.5px;cursor:pointer}
+.chatinput{display:flex;gap:8px;padding:12px;border-top:1px solid var(--line)}
+.chatinput input{margin:0;flex:1}
+.chatinput button{background:var(--indigo);color:#fff;border:0;border-radius:10px;padding:0 16px;cursor:pointer;font-weight:700}
+
+.toast{position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:var(--ink);color:var(--bg);padding:10px 18px;border-radius:12px;font-size:13px;z-index:50;opacity:0;pointer-events:none;transition:opacity .25s}
+.toast.show{opacity:1}
+
+/* Lock screen */
+.lockscreen{position:fixed;inset:0;background:var(--bg);z-index:100;display:flex;align-items:center;justify-content:center;padding:20px}
+.lockscreen.hidden{display:none}
+.lockbox{background:var(--paper);border:1px solid var(--line);border-radius:22px;padding:30px 24px;width:100%;max-width:360px;text-align:center;box-shadow:var(--shadow)}
+.lockicon{font-size:40px;margin-bottom:6px}
+.lockbox h2{font-size:19px;margin-bottom:6px}
+.lockbox input{text-align:center;letter-spacing:8px;font-size:20px;font-family:var(--font-mono);margin-top:6px}
+.lockbox .btn{margin-top:6px}
+
+@media(max-width:640px){.cards4{grid-template-columns:repeat(2,1fr)}.grid{grid-template-columns:1fr}.full{grid-column:auto}}
+</style>
+</head>
+<body data-theme="light">
+
+<div class="lockscreen" id="authScreen">
+  <div class="lockbox" style="max-width:380px">
+    <div class="lockicon">👤</div>
+    <h2 id="authTitle">Log In</h2>
+    <p class="small" id="authSub">Log in to Expense Tracker.</p>
+    <input id="authUsername" type="text" placeholder="Username" autocomplete="username" style="letter-spacing:normal;font-family:var(--font-body);font-size:15px;text-align:left" onkeydown="if(event.key==='Enter')document.getElementById('authPassword').focus()">
+    <input id="authPassword" type="password" placeholder="Password" autocomplete="current-password" style="letter-spacing:normal;font-family:var(--font-body);font-size:15px;text-align:left" onkeydown="if(event.key==='Enter'){document.getElementById('authConfirm').style.display!=='none'?document.getElementById('authConfirm').focus():authAction()}">
+    <input id="authConfirm" type="password" placeholder="Confirm password" autocomplete="new-password" style="display:none;letter-spacing:normal;font-family:var(--font-body);font-size:15px;text-align:left" onkeydown="if(event.key==='Enter')authAction()">
+    <div class="small" id="authError" style="color:var(--red);min-height:16px;margin-top:6px;text-align:left"></div>
+    <button class="primary btn" style="width:100%" onclick="authAction()" id="authBtn">Log In</button>
+    <p class="small" style="margin-top:12px" id="authToggleWrap">Don't have an account? <a href="javascript:void(0)" onclick="switchAuthMode('signup')" style="color:var(--indigo);font-weight:700;text-decoration:none">Create one</a></p>
+  </div>
+</div>
+
+<div class="appbar">
+  <div class="brand"><div class="mark">💰</div><div><b id="t_appname">Expense Tracker</b><span id="t_tagline">Track. Save. Grow.</span></div></div>
+  <button class="iconbtn" onclick="toggleTheme()" id="themeBtn">🌙</button>
+</div>
+
+<div class="wrap">
+
+<!-- DASHBOARD -->
+<section id="home" class="section active">
+  <div class="hero">
+    <div class="lbl" id="t_balance">Net Balance</div>
+    <div class="amt" id="hBalance">₹0.00</div>
+    <div class="row">
+      <div><div class="k" id="t_income">Income</div><div class="v" id="hIncome">₹0.00</div></div>
+      <div><div class="k" id="t_expense">Expenses</div><div class="v" id="hExpense">₹0.00</div></div>
+      <div><div class="k" id="t_savings">Saved</div><div class="v" id="hSavings">₹0.00</div></div>
+    </div>
+  </div>
+
+  <div class="cards4">
+    <div class="card metric"><span id="t_today">Today</span><b id="mToday">₹0.00</b></div>
+    <div class="card metric"><span id="t_month">This Month</span><b id="mMonth">₹0.00</b><span class="delta" id="mDelta"></span></div>
+    <div class="card metric"><span id="t_budgetleft">Budget Left</span><b id="mBudget">₹0.00</b></div>
+    <div class="card metric"><span id="t_count">Transactions</span><b id="mCount">0</b></div>
+  </div>
+
+  <div class="card">
+    <h2 id="t_pulse">Spending Pulse <span class="small" id="t_pulsesub">— last 15 days</span></h2>
+    <div class="pulse" id="pulseGrid"></div>
+    <div class="pulse-legend"><span id="t_low">Low</span><span id="t_high">High</span></div>
+  </div>
+
+  <div class="card" id="upcomingCard">
+    <h2 id="t_upcoming">Upcoming Payments <span class="small" style="float:right;cursor:pointer;color:var(--indigo);font-weight:600" onclick="show('recurring')">Manage →</span></h2>
+    <div id="upcomingList"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="t_insight1">Insight</h2>
+    <div id="dashInsight"></div>
+  </div>
+
+  <div class="card">
+    <h2 id="t_quick">Quick Actions</h2>
+    <div class="actions">
+      <button class="primary" onclick="openAdd('expense')" id="t_addexp">➕ Add Expense</button>
+      <button class="light" onclick="openAdd('income')" id="t_addinc">💵 Add Income</button>
+      <button class="light" onclick="openAI()" id="t_askai">🤖 Ask AI</button>
+      <button class="light" onclick="show('recurring')" id="t_gorecur">🔔 Recurring</button>
+    </div>
+  </div>
+</section>
+
+<!-- TRANSACTIONS -->
+<section id="transactions" class="section">
+  <div class="card">
+    <h2 id="t_alltx">All Transactions</h2>
+    <div class="chiprow" id="txTypeChips">
+      <div class="chip sel" data-v="ALL" onclick="setTxType(this)" id="t_all">All</div>
+      <div class="chip" data-v="expense" onclick="setTxType(this)" id="t_expenses">Expenses</div>
+      <div class="chip" data-v="income" onclick="setTxType(this)" id="t_incomes">Income</div>
+    </div>
+    <div class="grid">
+      <input id="search" class="full" placeholder="Search..." oninput="renderTx()">
+      <select id="catFilter" onchange="renderTx()"><option value="ALL" id="t_allcats">All Categories</option></select>
+      <select id="dateFilter" onchange="renderTx()">
+        <option value="ALL" id="t_alldates">All Dates</option>
+        <option value="TODAY" id="t_dtoday">Today</option>
+        <option value="WEEK" id="t_dweek">This Week</option>
+        <option value="MONTH" id="t_dmonth">This Month</option>
+      </select>
+    </div>
+    <div id="txList"></div>
+  </div>
+</section>
+
+<!-- ANALYTICS -->
+<section id="analytics" class="section">
+  <div class="card">
+    <h2 id="t_insights">📈 Insights</h2>
+    <div id="insightsList"></div>
+  </div>
+  <div class="card">
+    <h2 id="t_bycat">Spending by Category</h2>
+    <div class="donut-wrap">
+      <svg width="150" height="150" viewBox="0 0 150 150" id="donutSvg"></svg>
+      <div class="legend" id="donutLegend"></div>
+    </div>
+  </div>
+  <div class="card">
+    <h2 id="t_daily">Daily Spending <span class="small">— last 14 days</span></h2>
+    <svg width="100%" height="120" viewBox="0 0 320 120" id="dailyChart" preserveAspectRatio="none"></svg>
+  </div>
+  <div class="card">
+    <h2 id="t_incvsexp">Income vs Expense — last 6 months</h2>
+    <svg width="100%" height="150" viewBox="0 0 320 150" id="ieChart" preserveAspectRatio="none"></svg>
+  </div>
+  <div class="card">
+    <h2 id="t_top5">Top 5 Categories</h2>
+    <div id="top5"></div>
+  </div>
+  <div class="card">
+    <h2 id="t_highday">Highest Spending Day</h2>
+    <div id="highDay" class="small"></div>
+  </div>
+</section>
+
+<!-- GOALS -->
+<section id="goals" class="section">
+  <div class="card">
+    <h2 id="t_goalsh">🎯 Savings Goals</h2>
+    <div id="goalsList"></div>
+    <button class="primary btn" style="width:100%;margin-top:6px" onclick="openGoal()" id="t_newgoal">➕ New Goal</button>
+  </div>
+</section>
+
+<!-- RECURRING -->
+<section id="recurring" class="section">
+  <div class="card">
+    <h2 id="t_recurh">🔔 Recurring Expenses</h2>
+    <div id="recurList"></div>
+    <button class="primary btn" style="width:100%;margin-top:6px" onclick="openRecur()" id="t_newrecur">➕ Add Recurring</button>
+  </div>
+</section>
+
+<!-- SETTINGS -->
+<section id="settings" class="section">
+  <div class="card">
+    <h2>👤 Account</h2>
+    <p class="small" id="accountStatusText"></p>
+    <div class="actions">
+      <button class="light" onclick="openChangePassword()">Change Password</button>
+      <button class="danger" onclick="logout()">🚪 Logout</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2 id="t_budgeth">Monthly Budget</h2>
+    <div class="grid"><div><label id="t_budgetlbl">Budget (₹)</label><input id="budget" type="number" placeholder="20000" onchange="saveBudget()"></div>
+    <div><label id="t_month2">Month</label><input id="budgetMonth" type="month" onchange="render()"></div></div>
+  </div>
+  <div class="card">
+    <h2 id="t_lang">Language / भाषा</h2>
+    <select id="langSel" onchange="setLang(this.value)">
+      <option value="en">English</option>
+      <option value="hi">हिन्दी (Hindi)</option>
+      <option value="mr">मराठी (Marathi)</option>
+      <option value="ta">தமிழ் (Tamil)</option>
+      <option value="te">తెలుగు (Telugu)</option>
+      <option value="bn">বাংলা (Bengali)</option>
+      <option value="gu">ગુજરાતી (Gujarati)</option>
+      <option value="kn">ಕನ್ನಡ (Kannada)</option>
+      <option value="ml">മലയാളം (Malayalam)</option>
+      <option value="pa">ਪੰਜਾਬੀ (Punjabi)</option>
+      <option value="ur">اردو (Urdu)</option>
+      <option value="or">ଓଡ଼ିଆ (Odia)</option>
+      <option value="as">অসমীয়া (Assamese)</option>
+    </select>
+    <p class="small" id="t_langnote">All menus and labels are translated. The AI Assistant's replies are shown in English.</p>
+  </div>
+  <div class="card">
+    <h2 id="t_export">Export Data</h2>
+    <div class="actions">
+      <button class="light" onclick="exportCSV('expense')" id="t_expcsv">⬇️ Export Expenses CSV</button>
+      <button class="light" onclick="exportCSV('income')" id="t_inccsv">⬇️ Export Income CSV</button>
+      <button class="light" onclick="exportCSV('all')" id="t_allcsv">⬇️ Export Monthly Report CSV</button>
+    </div>
+  </div>
+  <div class="card">
+    <h2 id="t_danger">Data</h2>
+    <button class="danger btn" style="width:100%" onclick="resetAll()" id="t_reset">🗑 Reset All Data</button>
+  </div>
+</section>
+
+</div>
+
+<div class="navbar">
+  <button class="active" data-s="home" onclick="show('home')"><span class="ic">🏠</span><span id="t_navhome">Home</span></button>
+  <button data-s="transactions" onclick="show('transactions')"><span class="ic">📋</span><span id="t_navtx">Transactions</span></button>
+  <button data-s="analytics" onclick="show('analytics')"><span class="ic">📊</span><span id="t_navan">Analytics</span></button>
+  <button data-s="goals" onclick="show('goals')"><span class="ic">🎯</span><span id="t_navgoals">Goals</span></button>
+  <button data-s="settings" onclick="show('settings')"><span class="ic">⚙️</span><span id="t_navset">Settings</span></button>
+</div>
+
+<button class="fab" onclick="openAdd('expense')" title="Add expense">+</button>
+<button class="aifab" onclick="openAI()" title="AI Assistant">🤖</button>
+
+<!-- ADD/EDIT TRANSACTION MODAL -->
+<div class="modal" id="modal"><div class="modalbox">
+  <div class="modaltop"><h2 id="formTitle">Add Expense</h2><button class="closex" onclick="closeModal()">✕</button></div>
+  <div class="chiprow" id="typeChips">
+    <div class="chip sel" data-v="expense" onclick="setFormType(this)">💸 Expense</div>
+    <div class="chip" data-v="income" onclick="setFormType(this)">💵 Income</div>
+  </div>
+  <div class="grid">
+    <div><label id="t_amount">Amount (₹)</label><input id="amount" type="number" step="0.01" placeholder="0.00"></div>
+    <div id="catWrap"><label id="t_category">Category</label><select id="category"></select></div>
+    <div class="full"><label id="t_desc">Description</label><input id="description" placeholder="What was this for?"></div>
+    <div><label id="t_date">Date</label><input id="date" type="date"></div>
+    <div id="payWrap"><label id="t_paymethod">Payment Method</label><select id="paymethod">
+      <option>UPI - GPay</option><option>UPI - PhonePe</option><option>UPI - Paytm</option><option>Cash</option><option>Credit Card</option><option>Debit Card</option><option>Bank Transfer</option>
+    </select></div>
+  </div>
+  <div class="card" style="background:var(--bg);margin:4px 0 12px" id="scanCard">
+    <label id="t_scan">📷 Scan a receipt (optional)</label>
+    <input type="file" id="receiptFile" accept="image/*" onchange="scanReceipt(event)">
+    <div class="small" id="scanStatus"></div>
+  </div>
+  <div class="actions"><button class="light" onclick="closeModal()" id="t_cancel">Cancel</button><button class="primary" onclick="saveTx()" id="t_save">Save</button></div>
+</div></div>
+
+<!-- GOAL MODAL -->
+<div class="modal" id="goalModal"><div class="modalbox">
+  <div class="modaltop"><h2 id="goalFormTitle">New Goal</h2><button class="closex" onclick="closeGoalModal()">✕</button></div>
+  <label id="t_goalicon">Icon</label>
+  <div class="chiprow" id="goalIconRow">
+    <div class="chip sel" data-v="📱" onclick="setGoalIcon(this)">📱</div><div class="chip" data-v="🏍️" onclick="setGoalIcon(this)">🏍️</div>
+    <div class="chip" data-v="💻" onclick="setGoalIcon(this)">💻</div><div class="chip" data-v="✈️" onclick="setGoalIcon(this)">✈️</div>
+    <div class="chip" data-v="🎓" onclick="setGoalIcon(this)">🎓</div><div class="chip" data-v="🏦" onclick="setGoalIcon(this)">🏦</div>
+    <div class="chip" data-v="🏠" onclick="setGoalIcon(this)">🏠</div><div class="chip" data-v="💍" onclick="setGoalIcon(this)">💍</div>
+  </div>
+  <label id="t_goalname">Goal Name</label><input id="goalName" placeholder="New Phone">
+  <div class="grid">
+    <div><label id="t_goaltarget">Target (₹)</label><input id="goalTarget" type="number"></div>
+    <div><label id="t_goalsaved">Already Saved (₹)</label><input id="goalSaved" type="number" value="0"></div>
+  </div>
+  <div class="actions"><button class="light" onclick="closeGoalModal()" id="t_cancel2">Cancel</button><button class="primary" onclick="saveGoal()" id="t_save2">Save Goal</button></div>
+</div></div>
+
+<!-- RECURRING MODAL -->
+<div class="modal" id="recurModal"><div class="modalbox">
+  <div class="modaltop"><h2 id="t_recurtitle">Add Recurring Expense</h2><button class="closex" onclick="closeRecurModal()">✕</button></div>
+  <label id="t_recurname">Name</label><input id="recurName" placeholder="Netflix">
+  <div class="grid">
+    <div><label id="t_recuramt">Amount (₹)</label><input id="recurAmt" type="number"></div>
+    <div><label id="t_recurfreq">Frequency</label><select id="recurFreq"><option value="Monthly" id="t_monthly">Monthly</option><option value="Weekly" id="t_weekly">Weekly</option><option value="Yearly" id="t_yearly">Yearly</option></select></div>
+    <div><label id="t_recurcat">Category</label><select id="recurCat"></select></div>
+    <div><label id="t_recurnext">Next Due Date</label><input id="recurNext" type="date"></div>
+  </div>
+  <div class="actions"><button class="light" onclick="closeRecurModal()" id="t_cancel3">Cancel</button><button class="primary" onclick="saveRecur()" id="t_save3">Save</button></div>
+</div></div>
+
+<!-- AI CHAT -->
+<div class="chatpanel" id="chatPanel"><div class="chatbox">
+  <div class="chathead"><b id="t_chatTitle">🤖 Expense Tracker Assistant</b><button class="closex" onclick="closeAI()" style="background:rgba(255,255,255,.2);color:#fff">✕</button></div>
+  <div class="chatmsgs" id="chatMsgs"></div>
+  <div class="chatsug" id="chatSug"></div>
+  <div class="chatinput"><input id="chatInput" placeholder="Ask about your spending..." onkeydown="if(event.key==='Enter')sendChat()"><button onclick="sendChat()">➤</button></div>
+</div></div>
+
+<div class="toast" id="toast"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/tesseract.js/4.1.1/tesseract.min.js"></script>
+<script>
+/* ================= DATA LAYER (accounts) ================= */
+const APP_NAME="Expense Tracker";
+const ACCOUNTS_KEY="etAccounts_v1";
+const LEGACY_PROFILES_KEY="etProfiles_v1";
+const LEGACY_KEY="paisaProData_v1";
+
+function loadAccounts(){
+  try{ let raw=localStorage.getItem(ACCOUNTS_KEY); if(raw) return JSON.parse(raw); }catch(e){}
+  return null;
+}
+function saveAccounts(list){ localStorage.setItem(ACCOUNTS_KEY, JSON.stringify(list)); }
+function accountStoreKey(id){ return "etAccountData_"+id; }
+
+function migrateToAccounts(){
+  // Bring forward data from the previous profile/PIN version, if any.
+  try{
+    let rawProfiles=localStorage.getItem(LEGACY_PROFILES_KEY);
+    if(rawProfiles){
+      let profiles=JSON.parse(rawProfiles);
+      let used={}, list=[];
+      profiles.forEach((p,i)=>{
+        let base=(p.name||'user').toLowerCase().replace(/[^a-z0-9]/g,'')||'user';
+        let uname=base, n=1;
+        while(used[uname]){ uname=base+n; n++; }
+        used[uname]=true;
+        let raw=localStorage.getItem("etProfileData_"+p.id);
+        let d = raw ? JSON.parse(raw) : {expenses:[],income:[],goals:[],recurring:[],budget:0,lang:"en",theme:"light"};
+        delete d.pinHash; delete d.lockSetupShown; // old PIN scheme isn't compatible with password hashing
+        let id="acc"+Date.now()+i;
+        localStorage.setItem(accountStoreKey(id), JSON.stringify(d));
+        list.push({id, username:uname, passHash:null});
+      });
+      saveAccounts(list);
+      return list;
+    }
+  }catch(e){}
+  // Fall back further: the very first single-store version of the app.
+  try{
+    let raw=localStorage.getItem(LEGACY_KEY);
+    let old=JSON.parse(localStorage.getItem("expensePro")||"null");
+    let oldBudget=Number(localStorage.getItem("expenseBudget")||0);
+    let d=null;
+    if(raw) d=JSON.parse(raw);
+    else if(old) d={expenses:old.map(x=>({...x,paymethod:"Cash"})), income:[], goals:[], recurring:[], budget:oldBudget, lang:"en", theme:"light"};
+    if(d){
+      delete d.pinHash; delete d.lockSetupShown;
+      let id="acc"+Date.now();
+      localStorage.setItem(accountStoreKey(id), JSON.stringify(d));
+      let list=[{id, username:"user1", passHash:null}];
+      saveAccounts(list);
+      return list;
+    }
+  }catch(e){}
+  saveAccounts([]);
+  return [];
+}
+
+let ACCOUNTS = loadAccounts();
+if(!ACCOUNTS){ ACCOUNTS = migrateToAccounts(); }
+let ACTIVE_ACCOUNT_ID = sessionStorage.getItem('etActiveAccount') || null;
+if(ACTIVE_ACCOUNT_ID && !ACCOUNTS.find(a=>a.id===ACTIVE_ACCOUNT_ID)) ACTIVE_ACCOUNT_ID=null;
+
+function loadData(){
+  if(!ACTIVE_ACCOUNT_ID) return {expenses:[], income:[], goals:[], recurring:[], budget:0, lang:"en", theme:"light"};
+  try{
+    let raw=localStorage.getItem(accountStoreKey(ACTIVE_ACCOUNT_ID));
+    if(raw) return JSON.parse(raw);
+  }catch(e){}
+  return {expenses:[], income:[], goals:[], recurring:[], budget:0, lang:"en", theme:"light"};
+}
+let DATA=loadData();
+function persist(){
+  if(!ACTIVE_ACCOUNT_ID) return;
+  localStorage.setItem(accountStoreKey(ACTIVE_ACCOUNT_ID), JSON.stringify(DATA));
+}
+function currentAccountName(){
+  let a=ACCOUNTS.find(x=>x.id===ACTIVE_ACCOUNT_ID);
+  return a ? a.username : "";
+}
+
+/* ================= AUTH (login / signup / logout) ================= */
+async function sha256hex(str){
+  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,'0')).join('');
+}
+let authMode='login', pendingAccountId=null;
+function showAuthScreen(mode){
+  authMode=mode;
+  document.getElementById('authScreen').classList.remove('hidden');
+  document.getElementById('authError').textContent='';
+  document.getElementById('authConfirm').style.display='none';
+  document.getElementById('authConfirm').value='';
+  document.getElementById('authPassword').value='';
+  if(mode==='login'){
+    document.getElementById('authTitle').textContent='Log In';
+    document.getElementById('authSub').textContent='Log in to Expense Tracker.';
+    document.getElementById('authBtn').textContent='Log In';
+    document.getElementById('authUsername').style.display='block';
+    document.getElementById('authUsername').value='';
+    document.getElementById('authToggleWrap').style.display='block';
+    document.getElementById('authToggleWrap').innerHTML='Don\'t have an account? <a href="javascript:void(0)" onclick="switchAuthMode(\'signup\')" style="color:var(--indigo);font-weight:700;text-decoration:none">Create one</a>';
+  } else if(mode==='signup'){
+    document.getElementById('authTitle').textContent='Create Account';
+    document.getElementById('authSub').textContent="Pick a username and password. Your data stays separate from any other account on this device.";
+    document.getElementById('authBtn').textContent='Create Account';
+    document.getElementById('authUsername').style.display='block';
+    document.getElementById('authUsername').value='';
+    document.getElementById('authConfirm').style.display='block';
+    document.getElementById('authToggleWrap').style.display='block';
+    document.getElementById('authToggleWrap').innerHTML='Already have an account? <a href="javascript:void(0)" onclick="switchAuthMode(\'login\')" style="color:var(--indigo);font-weight:700;text-decoration:none">Log in</a>';
+  } else if(mode==='setpassword'){
+    document.getElementById('authTitle').textContent='Set a Password';
+    document.getElementById('authSub').textContent="This account doesn't have a password yet (carried over from an older version). Set one to continue.";
+    document.getElementById('authBtn').textContent='Set Password';
+    document.getElementById('authUsername').style.display='none';
+    document.getElementById('authConfirm').style.display='block';
+    document.getElementById('authToggleWrap').style.display='none';
+  }
+  setTimeout(()=>{ let f=(mode==='setpassword')?document.getElementById('authPassword'):document.getElementById('authUsername'); f.focus(); },100);
+}
+function switchAuthMode(mode){ showAuthScreen(mode); }
+function hideAuthScreen(){ document.getElementById('authScreen').classList.add('hidden'); }
+
+async function authAction(){
+  let err=document.getElementById('authError'); err.textContent='';
+  if(authMode==='login'){
+    let uname=document.getElementById('authUsername').value.trim();
+    let pass=document.getElementById('authPassword').value;
+    if(!uname||!pass){ err.textContent='Enter your username and password.'; return; }
+    let acc=ACCOUNTS.find(a=>a.username.toLowerCase()===uname.toLowerCase());
+    if(!acc){ err.textContent='No account with that username.'; return; }
+    if(!acc.passHash){ pendingAccountId=acc.id; showAuthScreen('setpassword'); return; }
+    let hash=await sha256hex(pass);
+    if(hash!==acc.passHash){ err.textContent='Incorrect password.'; document.getElementById('authPassword').value=''; return; }
+    loginAs(acc.id);
+    return;
+  }
+  if(authMode==='signup'){
+    let uname=document.getElementById('authUsername').value.trim();
+    let pass=document.getElementById('authPassword').value;
+    let conf=document.getElementById('authConfirm').value;
+    if(!uname||!pass){ err.textContent='Enter a username and password.'; return; }
+    if(pass.length<4){ err.textContent='Password must be at least 4 characters.'; return; }
+    if(pass!==conf){ err.textContent="Passwords don't match."; return; }
+    if(ACCOUNTS.find(a=>a.username.toLowerCase()===uname.toLowerCase())){ err.textContent='That username is already taken.'; return; }
+    let id="acc"+Date.now();
+    let passHash=await sha256hex(pass);
+    ACCOUNTS.push({id, username:uname, passHash});
+    saveAccounts(ACCOUNTS);
+    localStorage.setItem(accountStoreKey(id), JSON.stringify({expenses:[], income:[], goals:[], recurring:[], budget:0, lang:"en", theme:"light"}));
+    loginAs(id);
+    return;
+  }
+  if(authMode==='setpassword'){
+    let pass=document.getElementById('authPassword').value;
+    let conf=document.getElementById('authConfirm').value;
+    if(pass.length<4){ err.textContent='Password must be at least 4 characters.'; return; }
+    if(pass!==conf){ err.textContent="Passwords don't match."; return; }
+    let acc=ACCOUNTS.find(a=>a.id===pendingAccountId);
+    if(!acc){ err.textContent='Something went wrong — try logging in again.'; showAuthScreen('login'); return; }
+    acc.passHash=await sha256hex(pass);
+    saveAccounts(ACCOUNTS);
+    loginAs(acc.id);
+    return;
+  }
+}
+function loginAs(id){
+  ACTIVE_ACCOUNT_ID=id;
+  sessionStorage.setItem('etActiveAccount', id);
+  DATA=loadData();
+  hideAuthScreen();
+  document.getElementById("langSel").value = DATA.lang||"en";
+  setLang(DATA.lang||"en");
+  document.body.dataset.theme = DATA.theme||"light";
+  document.getElementById("themeBtn").textContent = (DATA.theme==="dark")?"☀️":"🌙";
+  renderAll();
+  renderAccountStatus();
+  toast('Welcome, '+currentAccountName());
+}
+function logout(){
+  sessionStorage.removeItem('etActiveAccount');
+  ACTIVE_ACCOUNT_ID=null;
+  showAuthScreen('login');
+}
+function initAuth(){
+  if(ACTIVE_ACCOUNT_ID){ hideAuthScreen(); return; }
+  showAuthScreen(ACCOUNTS.length ? 'login' : 'signup');
+}
+async function openChangePassword(){
+  if(!ACTIVE_ACCOUNT_ID){ toast('Log in first'); return; }
+  let acc=ACCOUNTS.find(a=>a.id===ACTIVE_ACCOUNT_ID);
+  let cur=prompt('Enter your current password:');
+  if(cur===null)return;
+  if(acc.passHash){
+    let curHash=await sha256hex(cur);
+    if(curHash!==acc.passHash){ toast('Current password is incorrect'); return; }
+  }
+  let next=prompt('Enter a new password (min 4 characters):');
+  if(next===null)return;
+  if(next.length<4){ toast('Password must be at least 4 characters'); return; }
+  let conf=prompt('Confirm new password:');
+  if(conf!==next){ toast("Passwords didn't match"); return; }
+  acc.passHash=await sha256hex(next);
+  saveAccounts(ACCOUNTS);
+  toast('Password updated');
+}
+function renderAccountStatus(){
+  let el=document.getElementById('accountStatusText');
+  if(!el)return;
+  el.innerHTML = ACTIVE_ACCOUNT_ID ? `Logged in as <b>${esc(currentAccountName())}</b>. Your data is private to this account.` : 'Not logged in.';
+}
+
+const CATS=["Food","Kirana/Groceries","Swiggy/Zomato","Travel","Petrol","Shopping","Bills","Recharge","EMI","Rent","Health","Education","Entertainment","Other"];
+const CAT_ICON={"Food":"🍽️","Kirana/Groceries":"🛒","Swiggy/Zomato":"🍔","Travel":"🚗","Petrol":"⛽","Shopping":"🛍️","Bills":"🧾","Recharge":"📱","EMI":"💳","Rent":"🏠","Health":"💊","Education":"📚","Entertainment":"🎬","Other":"✨"};
+const INC_SOURCES=["Salary","Freelance","Business","Investment","Gift","Other"];
+
+const today = new Date();
+function iso(d){return d.toISOString().slice(0,10)}
+function monthKey(d){return d.slice(0,7)}
+function money(n){return "₹"+Number(n||0).toLocaleString("en-IN",{minimumFractionDigits:2,maximumFractionDigits:2})}
+function esc(x){return String(x||"").replace(/[&<>"']/g,m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]))}
+function toast(msg){let t=document.getElementById("toast");t.textContent=msg;t.classList.add("show");clearTimeout(window._tt);window._tt=setTimeout(()=>t.classList.remove("show"),2200)}
+
+/* ================= INIT FORM DEFAULTS ================= */
+document.getElementById("date").value=iso(today);
+document.getElementById("budget").value=DATA.budget||"";
+document.getElementById("budgetMonth").value=today.toISOString().slice(0,7);
+document.getElementById("recurNext").value=iso(today);
+function fillCatSelect(sel, withAll){
+  sel.querySelectorAll("option:not([id])").forEach(o=>o.remove());
+  CATS.forEach(c=>{let o=document.createElement("option");o.value=c;o.textContent=CAT_ICON[c]+" "+c;sel.appendChild(o)});
+}
+fillCatSelect(document.getElementById("category"));
+fillCatSelect(document.getElementById("recurCat"));
+CATS.forEach(c=>{let o=document.createElement("option");o.value=c;o.textContent=c;document.getElementById("catFilter").appendChild(o)});
+
+/* ================= NAV ================= */
+function show(id){
+  document.querySelectorAll(".section").forEach(x=>x.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".navbar button").forEach(b=>b.classList.toggle("active",b.dataset.s===id));
+  if(id==="transactions")renderTx();
+  if(id==="analytics")renderAnalytics();
+  if(id==="goals")renderGoals();
+  if(id==="recurring")renderRecurring();
+  if(id==="settings"){renderAccountStatus();}
+}
+
+/* ================= THEME ================= */
+function toggleTheme(){
+  let cur=document.body.dataset.theme;
+  let next=cur==="light"?"dark":"light";
+  document.body.dataset.theme=next;
+  DATA.theme=next; persist();
+  document.getElementById("themeBtn").textContent = next==="dark"?"☀️":"🌙";
+}
+document.body.dataset.theme = DATA.theme||"light";
+document.getElementById("themeBtn").textContent = (DATA.theme==="dark")?"☀️":"🌙";
+
+/* ================= ADD/EDIT TX MODAL ================= */
+let editId=null, formType="expense";
+function setFormType(el){
+  document.querySelectorAll("#typeChips .chip").forEach(c=>c.classList.remove("sel"));
+  el.classList.add("sel"); formType=el.dataset.v;
+  document.getElementById("catWrap").style.display = formType==="expense"?"block":"none";
+  document.getElementById("payWrap").style.display = formType==="expense"?"block":"none";
+  document.getElementById("scanCard").style.display = formType==="expense"?"block":"none";
+  if(formType==="income"){
+    fillCatSelect2();
+  }
+}
+function fillCatSelect2(){
+  let sel=document.getElementById("category");
+  sel.querySelectorAll("option:not([id])").forEach(o=>o.remove());
+  INC_SOURCES.forEach(c=>{let o=document.createElement("option");o.value=c;o.textContent=c;sel.appendChild(o)});
+}
+function openAdd(type, id=null){
+  editId=id; formType=type||"expense";
+  document.querySelectorAll("#typeChips .chip").forEach(c=>c.classList.toggle("sel", c.dataset.v===formType));
+  document.getElementById("catWrap").style.display = formType==="expense"?"block":"none";
+  document.getElementById("payWrap").style.display = formType==="expense"?"block":"none";
+  document.getElementById("scanCard").style.display = formType==="expense"?"block":"none";
+  fillCatSelect(document.getElementById("category"));
+  if(formType==="income") fillCatSelect2();
+  document.getElementById("scanStatus").textContent="";
+  document.getElementById("receiptFile").value="";
+  let list = formType==="expense"?DATA.expenses:DATA.income;
+  if(id){
+    let x=list.find(e=>e.id===id);
+    document.getElementById("formTitle").textContent = formType==="expense"?T("t_edittx","Edit Expense"):T("t_editinc","Edit Income");
+    document.getElementById("amount").value=x.amount;
+    document.getElementById("category").value = formType==="expense"?x.category:x.source;
+    document.getElementById("description").value=x.description;
+    document.getElementById("date").value=x.date;
+    if(formType==="expense") document.getElementById("paymethod").value=x.paymethod||"Cash";
+  } else {
+    document.getElementById("formTitle").textContent = formType==="expense" ? T("t_formaddexp","Add Expense") : T("t_formaddinc","Add Income");
+    document.getElementById("amount").value="";
+    document.getElementById("description").value="";
+    document.getElementById("date").value=iso(today);
+  }
+  document.getElementById("modal").classList.add("open");
+}
+function closeModal(){document.getElementById("modal").classList.remove("open");editId=null}
+function saveTx(){
+  let a=Number(document.getElementById("amount").value);
+  if(!a||a<0){toast("Enter a valid amount");return}
+  let obj={
+    id: editId||Date.now(),
+    amount:a,
+    description: document.getElementById("description").value,
+    date: document.getElementById("date").value
+  };
+  if(formType==="expense"){
+    obj.category=document.getElementById("category").value;
+    obj.paymethod=document.getElementById("paymethod").value;
+    let list=DATA.expenses;
+    if(editId){let i=list.findIndex(x=>x.id===editId); list[i]=obj} else list.unshift(obj);
+  } else {
+    obj.source=document.getElementById("category").value;
+    let list=DATA.income;
+    if(editId){let i=list.findIndex(x=>x.id===editId); list[i]=obj} else list.unshift(obj);
+  }
+  persist(); closeModal(); renderAll();
+  toast("Saved");
+}
+function delTx(type,id){
+  if(!confirm("Delete this entry?"))return;
+  if(type==="expense") DATA.expenses=DATA.expenses.filter(x=>x.id!==id);
+  else DATA.income=DATA.income.filter(x=>x.id!==id);
+  persist(); renderAll();
+}
+
+/* ================= RECEIPT SCAN (OCR) ================= */
+function scanReceipt(ev){
+  let file=ev.target.files[0]; if(!file)return;
+  let statusEl=document.getElementById("scanStatus");
+  statusEl.textContent="Reading receipt…";
+  if(typeof Tesseract==="undefined"){ statusEl.textContent="OCR library unavailable — enter details manually."; return; }
+  Tesseract.recognize(file, 'eng').then(({data:{text}})=>{
+    statusEl.textContent="Scanned — please check the fields below.";
+    let amtMatch = text.match(/(?:₹|rs\.?|inr)\s*([\d,]+(?:\.\d{1,2})?)/i) || text.match(/(?:total|amount)\D{0,10}([\d,]+(?:\.\d{1,2})?)/i);
+    if(amtMatch) document.getElementById("amount").value = amtMatch[1].replace(/,/g,"");
+    let dateMatch = text.match(/(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/);
+    if(dateMatch){
+      let parts=dateMatch[1].split(/[\/\-.]/);
+      if(parts[2] && parts[2].length===2) parts[2]="20"+parts[2];
+      if(parts.length===3){
+        let guess = parts[2]+"-"+String(parts[1]).padStart(2,"0")+"-"+String(parts[0]).padStart(2,"0");
+        if(!isNaN(Date.parse(guess))) document.getElementById("date").value=guess;
+      }
+    }
+    let firstLine = text.split("\n").map(l=>l.trim()).find(l=>l.length>2);
+    if(firstLine && !document.getElementById("description").value) document.getElementById("description").value = firstLine.slice(0,40);
+  }).catch(()=>{ statusEl.textContent="Couldn't read that image — enter details manually."; });
+}
+
+/* ================= TX TYPE FILTER (transactions list) ================= */
+let txType="ALL";
+function setTxType(el){
+  document.querySelectorAll("#txTypeChips .chip").forEach(c=>c.classList.remove("sel"));
+  el.classList.add("sel"); txType=el.dataset.v; renderTx();
+}
+function renderTx(){
+  let q=(document.getElementById("search").value||"").toLowerCase();
+  let cf=document.getElementById("catFilter").value;
+  let df=document.getElementById("dateFilter").value;
+  let now=new Date();
+  function dateOk(d){
+    if(df==="ALL")return true;
+    let dt=new Date(d+"T00:00:00");
+    if(df==="TODAY")return d===iso(now);
+    if(df==="MONTH")return monthKey(d)===now.toISOString().slice(0,7);
+    if(df==="WEEK"){let diff=(now-dt)/86400000; return diff>=0&&diff<7}
+    return true;
+  }
+  let rows=[];
+  if(txType==="ALL"||txType==="expense") DATA.expenses.forEach(x=>rows.push({...x,type:"expense"}));
+  if(txType==="ALL"||txType==="income") DATA.income.forEach(x=>rows.push({...x,type:"income"}));
+  rows=rows.filter(x=>{
+    let catOk = cf==="ALL" || x.category===cf || x.source===cf;
+    let text=[x.description,x.category,x.source].join(" ").toLowerCase();
+    return dateOk(x.date) && catOk && text.includes(q);
+  }).sort((a,b)=> b.date.localeCompare(a.date) || b.id-a.id);
+  let list=document.getElementById("txList");
+  list.innerHTML = rows.length ? rows.map(x=>`
+    <div class="tx">
+      <div class="ico">${x.type==="income"?"💵":CAT_ICON[x.category]||"✨"}</div>
+      <div>
+        <b>${esc(x.description||(x.type==="income"?x.source:"No description"))}</b><br>
+        <span class="cat">${esc(x.type==="income"?x.source:x.category)}</span> <span class="small">${x.date}</span>
+        <div class="rowbtns"><button onclick="openAdd('${x.type}',${x.id})">✏️ Edit</button><button onclick="delTx('${x.type}',${x.id})">🗑 Delete</button></div>
+      </div>
+      <div class="amount ${x.type==="income"?"pos":"neg"}">${x.type==="income"?"+":"−"}${money(x.amount)}</div>
+    </div>`).join("") : `<div class="empty"><b>No transactions found</b><br>Try adjusting your filters, or add your first entry.</div>`;
+}
+
+/* ================= DASHBOARD RENDER ================= */
+function render(){
+  DATA.budget = Number(document.getElementById("budget").value)||DATA.budget||0;
+  let mk = today.toISOString().slice(0,7);
+  let totalInc = DATA.income.reduce((s,x)=>s+Number(x.amount),0);
+  let totalExp = DATA.expenses.reduce((s,x)=>s+Number(x.amount),0);
+  let mExp = DATA.expenses.filter(x=>monthKey(x.date)===mk).reduce((s,x)=>s+Number(x.amount),0);
+  let mInc = DATA.income.filter(x=>monthKey(x.date)===mk).reduce((s,x)=>s+Number(x.amount),0);
+  let todayExp = DATA.expenses.filter(x=>x.date===iso(today)).reduce((s,x)=>s+Number(x.amount),0);
+
+  document.getElementById("hBalance").textContent = money(totalInc-totalExp);
+  document.getElementById("hIncome").textContent = money(totalInc);
+  document.getElementById("hExpense").textContent = money(totalExp);
+  document.getElementById("hSavings").textContent = money(totalInc-totalExp);
+  document.getElementById("mToday").textContent = money(todayExp);
+  document.getElementById("mMonth").textContent = money(mExp);
+  document.getElementById("mCount").textContent = DATA.expenses.length+DATA.income.length;
+  document.getElementById("mBudget").textContent = money(Math.max(0, DATA.budget-mExp));
+
+  // month over month delta
+  let lm = new Date(today.getFullYear(), today.getMonth()-1, 1);
+  let lmk = lm.toISOString().slice(0,7);
+  let lmExp = DATA.expenses.filter(x=>monthKey(x.date)===lmk).reduce((s,x)=>s+Number(x.amount),0);
+  let delta = document.getElementById("mDelta");
+  if(lmExp>0){
+    let pct = Math.round((mExp-lmExp)/lmExp*100);
+    delta.textContent = (pct>=0?"↑ ":"↓ ")+Math.abs(pct)+"%";
+    delta.className = "delta "+(pct>=0?"up":"down");
+  } else { delta.textContent=""; }
+
+  renderPulse();
+  renderUpcoming();
+  renderDashInsight(mExp, lmExp);
+  renderTx();
+}
+
+function renderPulse(){
+  let grid=document.getElementById("pulseGrid"); grid.innerHTML="";
+  let days=[];
+  for(let i=14;i>=0;i--){
+    let d=new Date(today); d.setDate(d.getDate()-i);
+    let ds=iso(d);
+    let sum=DATA.expenses.filter(x=>x.date===ds).reduce((s,x)=>s+Number(x.amount),0);
+    days.push(sum);
+  }
+  let max=Math.max(...days,1);
+  days.forEach(v=>{
+    let el=document.createElement("div"); el.className="d";
+    let intensity = v/max;
+    el.title = money(v);
+    el.style.background = v===0 ? "var(--chip)" : `color-mix(in srgb, var(--accent) ${Math.round(20+intensity*80)}%, var(--chip))`;
+    grid.appendChild(el);
+  });
+}
+
+function renderUpcoming(){
+  let card=document.getElementById("upcomingCard");
+  let list=document.getElementById("upcomingList");
+  let upcoming = DATA.recurring.slice().sort((a,b)=>a.nextDate.localeCompare(b.nextDate)).slice(0,4);
+  if(!upcoming.length){ card.style.display="none"; return; }
+  card.style.display="block";
+  list.innerHTML = upcoming.map(r=>`
+    <div class="tx"><div class="ico">${CAT_ICON[r.category]||"🔔"}</div>
+    <div><b>${esc(r.name)}</b><br><span class="small">${r.frequency} • due ${r.nextDate}</span></div>
+    <div class="amount neg">${money(r.amount)}</div></div>`).join("");
+}
+
+function renderDashInsight(mExp, lmExp){
+  let el=document.getElementById("dashInsight");
+  let insights = buildInsights();
+  el.innerHTML = insights.slice(0,1).map(t=>`<div class="insight">${t}</div>`).join("") || `<div class="small">Add a few expenses to see personalized insights here.</div>`;
+}
+
+/* ================= INSIGHTS ENGINE ================= */
+function buildInsights(){
+  let out=[];
+  let mk = today.toISOString().slice(0,7);
+  let lm = new Date(today.getFullYear(), today.getMonth()-1, 1);
+  let lmk = lm.toISOString().slice(0,7);
+
+  // category MoM comparisons
+  let catThis={}, catLast={};
+  DATA.expenses.forEach(x=>{
+    if(monthKey(x.date)===mk) catThis[x.category]=(catThis[x.category]||0)+Number(x.amount);
+    if(monthKey(x.date)===lmk) catLast[x.category]=(catLast[x.category]||0)+Number(x.amount);
+  });
+  Object.keys(catThis).forEach(c=>{
+    if(catLast[c] && catLast[c]>0){
+      let pct=Math.round((catThis[c]-catLast[c])/catLast[c]*100);
+      if(Math.abs(pct)>=15){
+        out.push(`<b>${esc(c)}</b> spending ${pct>=0?"increased":"decreased"} <b>${Math.abs(pct)}%</b> this month (${money(catThis[c])} vs ${money(catLast[c])} last month).`);
+      }
+    }
+  });
+
+  // top category
+  let sorted=Object.entries(catThis).sort((a,b)=>b[1]-a[1]);
+  if(sorted.length){
+    let [topCat, topVal] = sorted[0];
+    let totalThis = Object.values(catThis).reduce((a,b)=>a+b,0);
+    out.push(`Your biggest expense category this month is <b>${esc(topCat)}</b> at ${money(topVal)} (${totalThis?Math.round(topVal/totalThis*100):0}% of spending).`);
+    // savings suggestion
+    let perDay = topVal/Math.max(1,today.getDate());
+    if(perDay>50){
+      let dailyCut=Math.round(perDay*0.2/10)*10;
+      let monthlySave=dailyCut*30;
+      out.push(`If you cut <b>${esc(topCat)}</b> spending by about ${money(dailyCut)}/day, you could save roughly <b>${money(monthlySave)}/month</b>.`);
+    }
+  }
+
+  // budget pace
+  if(DATA.budget>0){
+    let mExp=Object.values(catThis).reduce((a,b)=>a+b,0);
+    let dayOfMonth=today.getDate();
+    let daysInMonth=new Date(today.getFullYear(),today.getMonth()+1,0).getDate();
+    let pace = mExp/dayOfMonth*daysInMonth;
+    if(pace>DATA.budget){
+      out.push(`At your current pace, you're on track to spend <b>${money(pace)}</b> this month — over your ${money(DATA.budget)} budget.`);
+    } else {
+      out.push(`You're on pace to spend <b>${money(pace)}</b> this month, within your ${money(DATA.budget)} budget. Nice work.`);
+    }
+  }
+
+  if(!out.length) out.push("Add a few more expenses across different categories to unlock personalized insights.");
+  return out;
+}
+
+/* ================= ANALYTICS RENDER ================= */
+function renderAnalytics(){
+  document.getElementById("insightsList").innerHTML = buildInsights().map(t=>`<div class="insight">${t}</div>`).join("");
+  renderDonut();
+  renderDailyChart();
+  renderIEChart();
+  renderTop5();
+  renderHighDay();
+}
+
+const PALETTE=["#4338CA","#E8A23D","#1C8A4C","#D2483A","#7A5AF8","#0EA5B7","#C2410C","#9333EA","#0284C7","#65A30D","#DB2777","#78716C","#B45309","#0D9488"];
+function renderDonut(){
+  let mk=today.toISOString().slice(0,7);
+  let cats={};
+  DATA.expenses.filter(x=>monthKey(x.date)===mk).forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));
+  let entries=Object.entries(cats).sort((a,b)=>b[1]-a[1]);
+  let total=entries.reduce((s,[,v])=>s+v,0);
+  let svg=document.getElementById("donutSvg");
+  let legend=document.getElementById("donutLegend");
+  if(!total){ svg.innerHTML=`<circle cx="75" cy="75" r="60" fill="none" stroke="var(--chip)" stroke-width="20"/>`; legend.innerHTML=`<div class="small">No expenses this month yet.</div>`; return; }
+  let r=60, cx=75, cy=75, circ=2*Math.PI*r, offset=0, parts="";
+  entries.forEach(([cat,val],i)=>{
+    let frac=val/total, len=frac*circ;
+    parts += `<circle cx="${cx}" cy="${cy}" r="${r}" fill="none" stroke="${PALETTE[i%PALETTE.length]}" stroke-width="20" stroke-dasharray="${len} ${circ-len}" stroke-dashoffset="${-offset}" transform="rotate(-90 ${cx} ${cy})"/>`;
+    offset+=len;
+  });
+  svg.innerHTML = parts + `<circle cx="${cx}" cy="${cy}" r="${r-20}" fill="var(--paper)"/>`;
+  legend.innerHTML = entries.map(([cat,val],i)=>`<div class="li"><span class="sw" style="background:${PALETTE[i%PALETTE.length]}"></span>${esc(cat)} — ${money(val)} (${Math.round(val/total*100)}%)</div>`).join("");
+}
+
+function renderDailyChart(){
+  let days=[], labels=[];
+  for(let i=13;i>=0;i--){
+    let d=new Date(today); d.setDate(d.getDate()-i);
+    let ds=iso(d);
+    days.push(DATA.expenses.filter(x=>x.date===ds).reduce((s,x)=>s+Number(x.amount),0));
+    labels.push(d.getDate());
+  }
+  let max=Math.max(...days,1);
+  let w=320,h=120,bw=w/days.length;
+  let bars = days.map((v,i)=>{
+    let bh=Math.max(2, v/max*(h-20));
+    return `<rect x="${i*bw+3}" y="${h-bh}" width="${bw-6}" height="${bh}" rx="3" fill="var(--indigo)"/>`;
+  }).join("");
+  document.getElementById("dailyChart").innerHTML = bars;
+}
+
+function renderIEChart(){
+  let months=[];
+  for(let i=5;i>=0;i--){
+    let d=new Date(today.getFullYear(), today.getMonth()-i, 1);
+    months.push(d.toISOString().slice(0,7));
+  }
+  let inc=months.map(mk=>DATA.income.filter(x=>monthKey(x.date)===mk).reduce((s,x)=>s+Number(x.amount),0));
+  let exp=months.map(mk=>DATA.expenses.filter(x=>monthKey(x.date)===mk).reduce((s,x)=>s+Number(x.amount),0));
+  let max=Math.max(...inc,...exp,1);
+  let w=320,h=150,group=w/months.length;
+  let bars="";
+  months.forEach((mk,i)=>{
+    let ih=Math.max(2, inc[i]/max*(h-24)), eh=Math.max(2, exp[i]/max*(h-24));
+    let gx=i*group;
+    bars+=`<rect x="${gx+6}" y="${h-24-ih}" width="${group/2-9}" height="${ih}" rx="3" fill="var(--green)"/>`;
+    bars+=`<rect x="${gx+group/2+3}" y="${h-24-eh}" width="${group/2-9}" height="${eh}" rx="3" fill="var(--red)"/>`;
+    bars+=`<text x="${gx+group/2}" y="${h-8}" font-size="9" fill="var(--sub)" text-anchor="middle">${mk.slice(5)}</text>`;
+  });
+  document.getElementById("ieChart").innerHTML = bars;
+}
+
+function renderTop5(){
+  let mk=today.toISOString().slice(0,7);
+  let cats={};
+  DATA.expenses.filter(x=>monthKey(x.date)===mk).forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));
+  let entries=Object.entries(cats).sort((a,b)=>b[1]-a[1]).slice(0,5);
+  let total=Object.values(cats).reduce((a,b)=>a+b,0);
+  document.getElementById("top5").innerHTML = entries.length ? entries.map(([c,v])=>`
+    <div><b>${CAT_ICON[c]||""} ${esc(c)}</b> — ${money(v)} (${total?Math.round(v/total*100):0}%)
+    <div class="bar"><div style="width:${total?v/total*100:0}%"></div></div></div>`).join("") : `<div class="small">No expenses this month yet.</div>`;
+}
+
+function renderHighDay(){
+  let byDay={};
+  DATA.expenses.forEach(x=>byDay[x.date]=(byDay[x.date]||0)+Number(x.amount));
+  let entries=Object.entries(byDay).sort((a,b)=>b[1]-a[1]);
+  document.getElementById("highDay").innerHTML = entries.length ? `<b>${entries[0][0]}</b> — ${money(entries[0][1])} spent` : "No expenses yet.";
+}
+
+/* ================= GOALS ================= */
+let goalEditId=null, goalIcon="📱";
+function openGoal(id=null){
+  goalEditId=id;
+  document.getElementById("goalFormTitle").textContent = id?"Edit Goal":"New Goal";
+  if(id){
+    let g=DATA.goals.find(x=>x.id===id);
+    document.getElementById("goalName").value=g.name;
+    document.getElementById("goalTarget").value=g.target;
+    document.getElementById("goalSaved").value=g.saved;
+    goalIcon=g.icon;
+  } else {
+    document.getElementById("goalName").value="";
+    document.getElementById("goalTarget").value="";
+    document.getElementById("goalSaved").value=0;
+    goalIcon="📱";
+  }
+  document.querySelectorAll("#goalIconRow .chip").forEach(c=>c.classList.toggle("sel", c.dataset.v===goalIcon));
+  document.getElementById("goalModal").classList.add("open");
+}
+function setGoalIcon(el){ document.querySelectorAll("#goalIconRow .chip").forEach(c=>c.classList.remove("sel")); el.classList.add("sel"); goalIcon=el.dataset.v; }
+function closeGoalModal(){ document.getElementById("goalModal").classList.remove("open"); goalEditId=null; }
+function saveGoal(){
+  let name=document.getElementById("goalName").value.trim();
+  let target=Number(document.getElementById("goalTarget").value);
+  let saved=Number(document.getElementById("goalSaved").value)||0;
+  if(!name||!target){ toast("Enter a name and target amount"); return; }
+  let obj={id:goalEditId||Date.now(), name, target, saved, icon:goalIcon};
+  if(goalEditId){ let i=DATA.goals.findIndex(x=>x.id===goalEditId); DATA.goals[i]=obj; }
+  else DATA.goals.unshift(obj);
+  persist(); closeGoalModal(); renderGoals(); toast("Goal saved");
+}
+function delGoal(id){ if(!confirm("Delete this goal?"))return; DATA.goals=DATA.goals.filter(x=>x.id!==id); persist(); renderGoals(); }
+function addToGoal(id){
+  let amt=prompt("Add how much to this goal? (₹)");
+  if(!amt||isNaN(amt))return;
+  let g=DATA.goals.find(x=>x.id===id); g.saved=Number(g.saved)+Number(amt);
+  persist(); renderGoals(); toast("Updated goal");
+}
+function renderGoals(){
+  let list=document.getElementById("goalsList");
+  list.innerHTML = DATA.goals.length ? DATA.goals.map(g=>{
+    let pct=Math.min(100, Math.round(g.saved/g.target*100));
+    return `<div class="goal">
+      <div class="top"><b>${g.icon} ${esc(g.name)}</b><span class="small">${pct}%</span></div>
+      <div class="progress"><div style="width:${pct}%"></div></div>
+      <div class="small" style="margin-top:6px">${money(g.saved)} of ${money(g.target)}</div>
+      <div class="rowbtns"><button onclick="addToGoal(${g.id})">➕ Add Funds</button><button onclick="openGoal(${g.id})">✏️ Edit</button><button onclick="delGoal(${g.id})">🗑 Delete</button></div>
+    </div>`;
+  }).join("") : `<div class="empty">No goals yet. Create one to start saving toward something.</div>`;
+}
+
+/* ================= RECURRING ================= */
+let recurEditId=null;
+function openRecur(id=null){
+  recurEditId=id;
+  fillCatSelect(document.getElementById("recurCat"));
+  if(id){
+    let r=DATA.recurring.find(x=>x.id===id);
+    document.getElementById("recurName").value=r.name;
+    document.getElementById("recurAmt").value=r.amount;
+    document.getElementById("recurFreq").value=r.frequency;
+    document.getElementById("recurCat").value=r.category;
+    document.getElementById("recurNext").value=r.nextDate;
+  } else {
+    document.getElementById("recurName").value="";
+    document.getElementById("recurAmt").value="";
+    document.getElementById("recurFreq").value="Monthly";
+    document.getElementById("recurNext").value=iso(today);
+  }
+  document.getElementById("recurModal").classList.add("open");
+}
+function closeRecurModal(){ document.getElementById("recurModal").classList.remove("open"); recurEditId=null; }
+function saveRecur(){
+  let name=document.getElementById("recurName").value.trim();
+  let amount=Number(document.getElementById("recurAmt").value);
+  if(!name||!amount){ toast("Enter a name and amount"); return; }
+  let obj={id:recurEditId||Date.now(), name, amount, frequency:document.getElementById("recurFreq").value, category:document.getElementById("recurCat").value, nextDate:document.getElementById("recurNext").value};
+  if(recurEditId){ let i=DATA.recurring.findIndex(x=>x.id===recurEditId); DATA.recurring[i]=obj; }
+  else DATA.recurring.unshift(obj);
+  persist(); closeRecurModal(); renderRecurring(); renderUpcoming(); toast("Saved");
+}
+function delRecur(id){ if(!confirm("Delete this recurring expense?"))return; DATA.recurring=DATA.recurring.filter(x=>x.id!==id); persist(); renderRecurring(); renderUpcoming(); }
+function logRecurPaid(id){
+  let r=DATA.recurring.find(x=>x.id===id);
+  DATA.expenses.unshift({id:Date.now(), amount:r.amount, category:r.category, description:r.name+" (recurring)", date:iso(today), paymethod:"UPI - GPay"});
+  let next=new Date(r.nextDate);
+  if(r.frequency==="Monthly") next.setMonth(next.getMonth()+1);
+  else if(r.frequency==="Weekly") next.setDate(next.getDate()+7);
+  else next.setFullYear(next.getFullYear()+1);
+  r.nextDate=iso(next);
+  persist(); renderAll(); toast("Logged as paid");
+}
+function renderRecurring(){
+  let list=document.getElementById("recurList");
+  list.innerHTML = DATA.recurring.length ? DATA.recurring.slice().sort((a,b)=>a.nextDate.localeCompare(b.nextDate)).map(r=>`
+    <div class="tx"><div class="ico">${CAT_ICON[r.category]||"🔔"}</div>
+    <div><b>${esc(r.name)}</b><br><span class="cat">${esc(r.category)}</span> <span class="small">${r.frequency} • next ${r.nextDate}</span>
+    <div class="rowbtns"><button onclick="logRecurPaid(${r.id})">✅ Mark Paid</button><button onclick="openRecur(${r.id})">✏️ Edit</button><button onclick="delRecur(${r.id})">🗑 Delete</button></div></div>
+    <div class="amount neg">${money(r.amount)}</div></div>`).join("") : `<div class="empty">No recurring expenses yet. Add subscriptions, rent, or bills.</div>`;
+}
+
+/* ================= EXPORT ================= */
+function exportCSV(kind){
+  let rows=[], filename="";
+  let prefix=APP_NAME.toLowerCase().replace(/\s+/g,"-");
+  if(kind==="expense"){
+    rows=[["Date","Category","Description","Payment Method","Amount"]];
+    DATA.expenses.forEach(x=>rows.push([x.date,x.category,x.description,x.paymethod||"",x.amount]));
+    filename=prefix+"-expenses.csv";
+  } else if(kind==="income"){
+    rows=[["Date","Source","Description","Amount"]];
+    DATA.income.forEach(x=>rows.push([x.date,x.source,x.description,x.amount]));
+    filename=prefix+"-income.csv";
+  } else {
+    rows=[["Type","Date","Category/Source","Description","Amount"]];
+    DATA.expenses.forEach(x=>rows.push(["Expense",x.date,x.category,x.description,-x.amount]));
+    DATA.income.forEach(x=>rows.push(["Income",x.date,x.source,x.description,x.amount]));
+    filename=prefix+"-monthly-report.csv";
+  }
+  let csv=rows.map(r=>r.map(c=>`"${String(c??"").replace(/"/g,'""')}"`).join(",")).join("\n");
+  let blob=new Blob([csv],{type:"text/csv"});
+  let a=document.createElement("a"); a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  toast("Exported "+filename);
+}
+
+/* ================= RESET ================= */
+function resetAll(){
+  if(!confirm("This will permanently delete all data for "+currentAccountName()+" (other accounts are unaffected). Continue?"))return;
+  DATA={expenses:[], income:[], goals:[], recurring:[], budget:0, lang:DATA.lang, theme:DATA.theme};
+  persist(); renderAll(); toast("All data cleared for "+currentAccountName());
+}
+
+/* ================= AI ASSISTANT ================= */
+function openAI(){
+  document.getElementById("chatPanel").classList.add("open");
+  if(!document.getElementById("chatMsgs").children.length){
+    let insights = buildInsights();
+    botSay("Hi! I'm your spending assistant. "+insights[0]);
+    showSuggestions();
+  }
+}
+function closeAI(){ document.getElementById("chatPanel").classList.remove("open"); }
+function botSay(text){
+  let m=document.createElement("div"); m.className="msg bot"; m.innerHTML=text;
+  document.getElementById("chatMsgs").appendChild(m);
+  document.getElementById("chatMsgs").scrollTop=9e9;
+}
+function userSay(text){
+  let m=document.createElement("div"); m.className="msg user"; m.textContent=text;
+  document.getElementById("chatMsgs").appendChild(m);
+  document.getElementById("chatMsgs").scrollTop=9e9;
+}
+const SUGGESTIONS=["Where did I spend the most?","How much did I spend on Food?","Can I afford ₹5000 this month?","Compare this month with last month","How do I scan a receipt?","How do I set a budget?"];
+function showSuggestions(){
+  document.getElementById("chatSug").innerHTML = SUGGESTIONS.map(s=>`<button onclick="askSuggested('${s.replace(/'/g,"\\'")}')">${s}</button>`).join("");
+}
+function askSuggested(s){ document.getElementById("chatInput").value=s; sendChat(); }
+function sendChat(){
+  let input=document.getElementById("chatInput");
+  let q=input.value.trim(); if(!q)return;
+  userSay(q); input.value="";
+  setTimeout(()=>botSay(answerQuestion(q)), 300);
+}
+function answerQuestion(q){
+  let ql=q.toLowerCase();
+  let mk=today.toISOString().slice(0,7);
+  let lm=new Date(today.getFullYear(), today.getMonth()-1, 1).toISOString().slice(0,7);
+  let mExp=DATA.expenses.filter(x=>monthKey(x.date)===mk);
+  let lmExp=DATA.expenses.filter(x=>monthKey(x.date)===lm);
+  let mTotal=mExp.reduce((s,x)=>s+Number(x.amount),0);
+  let lmTotal=lmExp.reduce((s,x)=>s+Number(x.amount),0);
+
+  // ---- App how-to / usage questions ----
+  let isHowTo = /\b(how do i|how to|how can i|where do i|where can i|where is|what is this|what does this app|help me|can you tell me how)\b/.test(ql) || ql.trim()==="help";
+  if(isHowTo){
+    const HELP_TOPICS=[
+      {kw:["scan","receipt","photo","ocr"], a:"When you tap <b>Add Expense</b>, there's a 'Scan a receipt' section — upload a photo and it reads the amount, date and merchant off the image automatically, then pre-fills the form. Just double-check the fields before saving."},
+      {kw:["add income","log income","record income","income"], a:"On the Home tab, tap <b>💵 Add Income</b> (or open the add form and switch the type chip to 'Income'). Fill in the amount, source (Salary, Freelance, etc.) and date, then Save."},
+      {kw:["add expense","log expense","record expense","new expense"], a:"Tap the <b>+</b> button in the bottom-right, or 'Add Expense' on the Home tab. Fill in the amount, category, description, date and payment method, then Save."},
+      {kw:["budget"], a:"Go to <b>Settings → Monthly Budget</b>, enter an amount, and it's saved automatically — your Home dashboard will then show budget remaining and pace warnings."},
+      {kw:["language","भाषा"], a:"Go to <b>Settings → Language</b> and pick from the dropdown. All menus and labels switch instantly; the AI Assistant's own replies stay in English for now."},
+      {kw:["dark mode","theme","light mode"], a:"Tap the 🌙/☀️ icon in the top-right of the header to toggle between light and dark mode."},
+      {kw:["export","csv","download","report"], a:"Go to <b>Settings → Export Data</b>. You can download an Expenses CSV, an Income CSV, or a combined Monthly Report CSV."},
+      {kw:["goal","saving goal","savings goal"], a:"Go to the <b>Goals</b> tab and tap '+ New Goal'. Pick an icon, name it, set a target amount, and you can add funds to it any time with the 'Add Funds' button."},
+      {kw:["recurring","subscription","bill","rent","netflix"], a:"Go to the <b>Recurring</b> tab (or tap 'Recurring' under Quick Actions on Home) and add the name, amount, frequency, and next due date. Tap 'Mark Paid' when it's due to log it as an expense automatically."},
+      {kw:["delete","remove","edit","change transaction"], a:"Open the <b>Transactions</b> tab, find the entry, and use the ✏️ Edit or 🗑 Delete buttons underneath it."},
+      {kw:["reset","clear data","delete everything","start over"], a:"Go to <b>Settings → Data → Reset All Data</b>. This permanently clears everything — expenses, income, goals and recurring bills — so only use it if you're sure."},
+      {kw:["filter","search"], a:"On the <b>Transactions</b> tab you can search by description, filter by category, and filter by date (today / this week / this month)."},
+      {kw:["payment method","upi","gpay","phonepe","paytm"], a:"When adding an expense, pick a Payment Method — UPI (GPay/PhonePe/Paytm), Cash, Credit Card, Debit Card, or Bank Transfer."},
+      {kw:["what is this","what does this app","about this app"], a:"This is <b>Expense Tracker</b> — it tracks your income and expenses, shows spending analytics and insights, lets you set savings goals and recurring bills, and I'm the built-in assistant who can help you use any of it or answer questions about your own spending."},
+    ];
+    let hit = HELP_TOPICS.find(t=>t.kw.some(k=>ql.includes(k)));
+    if(hit) return hit.a;
+    return "I can help you use Expense Tracker — try asking how to add an expense or income, set a budget, scan a receipt, create a savings goal, add a recurring bill, change the language, or export your data. I can also answer questions about your own spending, like 'where did I spend the most' or 'can I afford ₹5,000'.";
+  }
+
+  // category-specific question
+  let matchedCat = CATS.find(c=>ql.includes(c.toLowerCase().split("/")[0]));
+  if(matchedCat){
+    let spent=mExp.filter(x=>x.category===matchedCat).reduce((s,x)=>s+Number(x.amount),0);
+    let last=lmExp.filter(x=>x.category===matchedCat).reduce((s,x)=>s+Number(x.amount),0);
+    let cmp = last>0 ? ` That's ${spent>=last?"up":"down"} ${Math.round(Math.abs(spent-last)/last*100)}% from last month.` : "";
+    return `You've spent <b>${money(spent)}</b> on <b>${esc(matchedCat)}</b> this month.`+cmp;
+  }
+
+  if(ql.includes("most")||ql.includes("highest")||ql.includes("top")){
+    let cats={}; mExp.forEach(x=>cats[x.category]=(cats[x.category]||0)+Number(x.amount));
+    let top=Object.entries(cats).sort((a,b)=>b[1]-a[1])[0];
+    if(!top) return "You haven't logged any expenses this month yet.";
+    return `Your biggest spend this month is <b>${esc(top[0])}</b> at ${money(top[1])}.`;
+  }
+
+  if(ql.includes("afford")){
+    let numMatch=ql.match(/[\d,]+/);
+    let amt = numMatch ? Number(numMatch[0].replace(/,/g,"")) : 0;
+    let remaining = DATA.budget ? Math.max(0, DATA.budget-mTotal) : null;
+    let totalInc=DATA.income.filter(x=>monthKey(x.date)===mk).reduce((s,x)=>s+Number(x.amount),0);
+    let netAvail = totalInc - mTotal;
+    if(remaining!==null){
+      return amt<=remaining ? `Yes — you have ${money(remaining)} left in your budget this month, so ${money(amt)} fits.` : `That might be tight — you only have ${money(remaining)} left in your monthly budget, and this is ${money(amt)}.`;
+    }
+    return `Based on income minus expenses this month, you have about ${money(netAvail)} available. ${amt<=netAvail?"That amount looks affordable.":"That may stretch your budget — consider your upcoming bills too."}`;
+  }
+
+  if(ql.includes("compare")){
+    if(!lmTotal) return `You spent ${money(mTotal)} this month. No data from last month to compare yet.`;
+    let pct=Math.round((mTotal-lmTotal)/lmTotal*100);
+    return `This month: ${money(mTotal)}. Last month: ${money(lmTotal)}. That's ${pct>=0?"an increase":"a decrease"} of ${Math.abs(pct)}%.`;
+  }
+
+  if(ql.includes("save")||ql.includes("saving")){
+    let totalInc=DATA.income.filter(x=>monthKey(x.date)===mk).reduce((s,x)=>s+Number(x.amount),0);
+    let net=totalInc-mTotal;
+    let goalsSaved=DATA.goals.reduce((s,g)=>s+Number(g.saved),0);
+    return `This month you've saved (income − expenses) about ${money(Math.max(0,net))}.` + (DATA.goals.length? ` You also have ${money(goalsSaved)} saved across ${DATA.goals.length} goal(s).`:"");
+  }
+
+  if(ql.includes("budget")){
+    if(!DATA.budget) return "You haven't set a monthly budget yet — you can add one in Settings.";
+    return `Your monthly budget is ${money(DATA.budget)}. You've spent ${money(mTotal)} so far, leaving ${money(Math.max(0,DATA.budget-mTotal))}.`;
+  }
+
+  // fallback: general insight
+  let insights=buildInsights();
+  return insights[0] || "I can help with things like your top spending category, monthly comparisons, or whether you can afford something — or ask me how to use any part of the app, like scanning a receipt or setting a budget.";
+}
+
+/* ================= LANGUAGE ================= */
+const TXT = {
+  t_addexp:{en:"➕ Add Expense",hi:"➕ खर्च जोड़ें",mr:"➕ खर्च जोडा",ta:"➕ செலவு சேர்",te:"➕ ఖర్చు జోడించండి",bn:"➕ খরচ যোগ করুন",gu:"➕ ખર્ચ ઉમેરો",kn:"➕ ಖರ್ಚು ಸೇರಿಸಿ",ml:"➕ ചെലവ് ചേർക്കുക",pa:"➕ ਖਰਚ ਸ਼ਾਮਲ ਕਰੋ",ur:"➕ خرچ شامل کریں",or:"➕ ଖର୍ଚ୍ଚ ଯୋଗ କରନ୍ତୁ",as:"➕ খৰচ যোগ কৰক"},
+  t_addinc:{en:"💵 Add Income",hi:"💵 आय जोड़ें",mr:"💵 उत्पन्न जोडा",ta:"💵 வருமானம் சேர்",te:"💵 ఆదాయం జోడించండి",bn:"💵 আয় যোগ করুন",gu:"💵 આવક ઉમેરો",kn:"💵 ಆದಾಯ ಸೇರಿಸಿ",ml:"💵 വരുമാനം ചേർക്കുക",pa:"💵 ਆਮਦਨ ਸ਼ਾਮਲ ਕਰੋ",ur:"💵 آمدنی شامل کریں",or:"💵 ଆୟ ଯୋଗ କରନ୍ତୁ",as:"💵 আয় যোগ কৰক"},
+  t_all:{en:"All",hi:"सभी",mr:"सर्व",ta:"அனைத்தும்",te:"అన్నీ",bn:"সব",gu:"બધા",kn:"ಎಲ್ಲಾ",ml:"എല്ലാം",pa:"ਸਾਰੇ",ur:"تمام",or:"ସମସ୍ତ",as:"সকলো"},
+  t_allcats:{en:"All Categories",hi:"सभी श्रेणियाँ",mr:"सर्व श्रेणी",ta:"அனைத்து வகைகளும்",te:"అన్ని వర్గాలు",bn:"সব বিভাগ",gu:"બધી શ્રેણીઓ",kn:"ಎಲ್ಲಾ ವರ್ಗಗಳು",ml:"എല്ലാ വിഭാഗങ്ങളും",pa:"ਸਾਰੀਆਂ ਸ਼੍ਰੇਣੀਆਂ",ur:"تمام زمرہ جات",or:"ସମସ୍ତ ବର୍ଗ",as:"সকলো শ্ৰেণী"},
+  t_allcsv:{en:"⬇️ Export Monthly Report CSV",hi:"⬇️ मासिक रिपोर्ट CSV निर्यात करें",mr:"⬇️ मासिक अहवाल CSV एक्सपोर्ट करा",ta:"⬇️ மாத அறிக்கை CSV ஏற்றுமதி",te:"⬇️ మాసిక నివేదిక CSV ఎగుమతి",bn:"⬇️ মাসিক রিপোর্ট CSV এক্সপোর্ট করুন",gu:"⬇️ માસિક રિપોર્ટ CSV નિકાસ કરો",kn:"⬇️ ಮಾಸಿಕ ವರದಿ CSV ರಫ್ತು ಮಾಡಿ",ml:"⬇️ പ്രതിമാസ റിപ്പോർട്ട് CSV എക്‌സ്‌പോർട്ട്",pa:"⬇️ ਮਾਸਿਕ ਰਿਪੋਰਟ CSV ਐਕਸਪੋਰਟ ਕਰੋ",ur:"⬇️ ماہانہ رپورٹ CSV ایکسپورٹ کریں",or:"⬇️ ମାସିକ ରିପୋର୍ଟ CSV ରପ୍ତାନି",as:"⬇️ মাহেকীয়া প্ৰতিবেদন CSV ৰপ্তানি"},
+  t_alldates:{en:"All Dates",hi:"सभी तारीखें",mr:"सर्व तारखा",ta:"அனைத்து தேதிகளும்",te:"అన్ని తేదీలు",bn:"সব তারিখ",gu:"બધી તારીખો",kn:"ಎಲ್ಲಾ ದಿನಾಂಕಗಳು",ml:"എല്ലാ തീയതികളും",pa:"ਸਾਰੀਆਂ ਮਿਤੀਆਂ",ur:"تمام تاریخیں",or:"ସମସ୍ତ ତାରିଖ",as:"সকলো তাৰিখ"},
+  t_alltx:{en:"All Transactions",hi:"सभी लेनदेन",mr:"सर्व व्यवहार",ta:"அனைத்து பரிவர்த்தனைகள்",te:"అన్ని లావాదేవీలు",bn:"সব লেনদেন",gu:"બધા વ્યવહારો",kn:"ಎಲ್ಲಾ ವಹಿವಾಟುಗಳು",ml:"എല്ലാ ഇടപാടുകളും",pa:"ਸਾਰੇ ਲੈਣ-ਦੇਣ",ur:"تمام لین دین",or:"ସମସ୍ତ କାରବାର",as:"সকলো লেনদেন"},
+  t_amount:{en:"Amount (₹)",hi:"राशि (₹)",mr:"रक्कम (₹)",ta:"தொகை (₹)",te:"మొత్తం (₹)",bn:"পরিমাণ (₹)",gu:"રકમ (₹)",kn:"ಮೊತ್ತ (₹)",ml:"തുക (₹)",pa:"ਰਕਮ (₹)",ur:"رقم (₹)",or:"ପରିମାଣ (₹)",as:"পৰিমাণ (₹)"},
+  t_appname:{en:"Expense Tracker",hi:"Expense Tracker",mr:"Expense Tracker",ta:"Expense Tracker",te:"Expense Tracker",bn:"Expense Tracker",gu:"Expense Tracker",kn:"Expense Tracker",ml:"Expense Tracker",pa:"Expense Tracker",ur:"Expense Tracker",or:"Expense Tracker",as:"Expense Tracker"},
+  t_askai:{en:"🤖 Ask AI",hi:"🤖 AI से पूछें",mr:"🤖 AI ला विचारा",ta:"🤖 AI-யிடம் கேளுங்கள்",te:"🤖 AI ని అడగండి",bn:"🤖 AI-কে জিজ্ঞাসা করুন",gu:"🤖 AI ને પૂછો",kn:"🤖 AI ಅನ್ನು ಕೇಳಿ",ml:"🤖 AI-യോട് ചോദിക്കുക",pa:"🤖 AI ਨੂੰ ਪੁੱਛੋ",ur:"🤖 AI سے پوچھیں",or:"🤖 AI କୁ ପଚାରନ୍ତୁ",as:"🤖 AI ক সোধক"},
+  t_balance:{en:"Net Balance",hi:"शेष राशि",mr:"निव्वळ शिल्लक",ta:"நிகர இருப்பு",te:"నికర నిల్వ",bn:"নিট ব্যালেন্স",gu:"ચોખ્ખી બેલેન્સ",kn:"ನಿವ್ವಳ ಬಾಕಿ",ml:"നെറ്റ് ബാലൻസ്",pa:"ਸ਼ੁੱਧ ਬਕਾਇਆ",ur:"خالص بیلنس",or:"ନିଟ୍ ବାକି",as:"নিট বেলেন্স"},
+  t_budgeth:{en:"Monthly Budget",hi:"मासिक बजट",mr:"मासिक बजेट",ta:"மாதாந்திர பட்ஜெட்",te:"మాసిక బడ్జెట్",bn:"মাসিক বাজেট",gu:"માસિક બજેટ",kn:"ಮಾಸಿಕ ಬಜೆಟ್",ml:"പ്രതിമാസ ബജറ്റ്",pa:"ਮਾਸਿਕ ਬਜਟ",ur:"ماہانہ بجٹ",or:"ମାସିକ ବଜେଟ୍",as:"মাহেকীয়া বাজেট"},
+  t_budgetlbl:{en:"Budget (₹)",hi:"बजट (₹)",mr:"बजेट (₹)",ta:"பட்ஜெட் (₹)",te:"బడ్జెట్ (₹)",bn:"বাজেট (₹)",gu:"બજેટ (₹)",kn:"ಬಜೆಟ್ (₹)",ml:"ബജറ്റ് (₹)",pa:"ਬਜਟ (₹)",ur:"بجٹ (₹)",or:"ବଜେଟ୍ (₹)",as:"বাজেট (₹)"},
+  t_budgetleft:{en:"Budget Left",hi:"बजट शेष",mr:"उरलेले बजेट",ta:"மீதமுள்ள பட்ஜெட்",te:"మిగిలిన బడ్జెట్",bn:"অবশিষ্ট বাজেট",gu:"બાકી બજેટ",kn:"ಉಳಿದ ಬಜೆಟ್",ml:"ബാക്കിയുള്ള ബജറ്റ്",pa:"ਬਾਕੀ ਬਜਟ",ur:"بقیہ بجٹ",or:"ବଳକା ବଜେଟ୍",as:"বাকী বাজেট"},
+  t_bycat:{en:"Spending by Category",hi:"श्रेणी अनुसार खर्च",mr:"श्रेणीनुसार खर्च",ta:"வகை வாரியான செலவு",te:"వర్గం వారీగా ఖర్చు",bn:"বিভাগ অনুযায়ী খরচ",gu:"શ્રેણી પ્રમાણે ખર્ચ",kn:"ವರ್ಗದ ಪ್ರಕಾರ ಖರ್ಚು",ml:"വിഭാഗം അനുസരിച്ചുള്ള ചെലവ്",pa:"ਸ਼੍ਰੇਣੀ ਅਨੁਸਾਰ ਖਰਚ",ur:"زمرہ کے حساب سے اخراجات",or:"ବର୍ଗ ଅନୁସାରେ ଖର୍ଚ୍ଚ",as:"শ্ৰেণী অনুসৰি খৰচ"},
+  t_cancel:{en:"Cancel",hi:"रद्द करें",mr:"रद्द करा",ta:"ரத்து செய்",te:"రద్దు చేయండి",bn:"বাতিল করুন",gu:"રદ કરો",kn:"ರದ್ದುಗೊಳಿಸಿ",ml:"റദ്ദാക്കുക",pa:"ਰੱਦ ਕਰੋ",ur:"منسوخ کریں",or:"ବାତିଲ୍ କରନ୍ତୁ",as:"বাতিল কৰক"},
+  t_cancel2:{en:"Cancel",hi:"रद्द करें",mr:"रद्द करा",ta:"ரத்து செய்",te:"రద్దు చేయండి",bn:"বাতিল করুন",gu:"રદ કરો",kn:"ರದ್ದುಗೊಳಿಸಿ",ml:"റദ്ദാക്കുക",pa:"ਰੱਦ ਕਰੋ",ur:"منسوخ کریں",or:"ବାତିଲ୍ କରନ୍ତୁ",as:"বাতিল কৰক"},
+  t_cancel3:{en:"Cancel",hi:"रद्द करें",mr:"रद्द करा",ta:"ரத்து செய்",te:"రద్దు చేయండి",bn:"বাতিল করুন",gu:"રદ કરો",kn:"ರದ್ದುಗೊಳಿಸಿ",ml:"റദ്ദാക്കുക",pa:"ਰੱਦ ਕਰੋ",ur:"منسوخ کریں",or:"ବାତିଲ୍ କରନ୍ତୁ",as:"বাতিল কৰক"},
+  t_category:{en:"Category",hi:"श्रेणी",mr:"श्रेणी",ta:"வகை",te:"వర్గం",bn:"বিভাগ",gu:"શ્રેણી",kn:"ವರ್ಗ",ml:"വിഭാഗം",pa:"ਸ਼੍ਰੇਣੀ",ur:"زمرہ",or:"ବର୍ଗ",as:"শ্ৰেণী"},
+  t_chatTitle:{en:"🤖 Expense Tracker Assistant",hi:"🤖 Expense Tracker सहायक",mr:"🤖 Expense Tracker सहाय्यक",ta:"🤖 Expense Tracker உதவியாளர்",te:"🤖 Expense Tracker సహాయకుడు",bn:"🤖 Expense Tracker সহায়ক",gu:"🤖 Expense Tracker સહાયક",kn:"🤖 Expense Tracker ಸಹಾಯಕ",ml:"🤖 Expense Tracker സഹായി",pa:"🤖 Expense Tracker ਸਹਾਇਕ",ur:"🤖 Expense Tracker اسسٹنٹ",or:"🤖 Expense Tracker ସହାୟକ",as:"🤖 Expense Tracker সহায়ক"},
+  t_count:{en:"Transactions",hi:"लेनदेन",mr:"व्यवहार",ta:"பரிவர்த்தனைகள்",te:"లావాదేవీలు",bn:"লেনদেন",gu:"વ્યવહારો",kn:"ವಹಿವಾಟುಗಳು",ml:"ഇടപാടുകൾ",pa:"ਲੈਣ-ਦੇਣ",ur:"لین دین",or:"କାରବାର",as:"লেনদেন"},
+  t_daily:{en:"Daily Spending",hi:"दैनिक खर्च",mr:"दैनंदिन खर्च",ta:"தினசரி செலவு",te:"రోజువారీ ఖర్చు",bn:"দৈনিক খরচ",gu:"દૈનિક ખર્ચ",kn:"ದೈನಂದಿನ ಖರ್ಚು",ml:"ദൈനംദിന ചെലവ്",pa:"ਰੋਜ਼ਾਨਾ ਖਰਚ",ur:"روزانہ اخراجات",or:"ଦୈନିକ ଖର୍ଚ୍ଚ",as:"দৈনিক খৰচ"},
+  t_danger:{en:"Data",hi:"डेटा",mr:"डेटा",ta:"தரவு",te:"డేటా",bn:"ডেটা",gu:"ડેટા",kn:"ಡೇಟಾ",ml:"ഡാറ്റ",pa:"ਡਾਟਾ",ur:"ڈیٹا",or:"ତଥ୍ୟ",as:"ডাটা"},
+  t_date:{en:"Date",hi:"तारीख",mr:"तारीख",ta:"தேதி",te:"తేదీ",bn:"তারিখ",gu:"તારીખ",kn:"ದಿನಾಂಕ",ml:"തീയതി",pa:"ਮਿਤੀ",ur:"تاریخ",or:"ତାରିଖ",as:"তাৰিখ"},
+  t_desc:{en:"Description",hi:"विवरण",mr:"वर्णन",ta:"விவரம்",te:"వివరణ",bn:"বিবরণ",gu:"વર્ણન",kn:"ವಿವರಣೆ",ml:"വിവരണം",pa:"ਵੇਰਵਾ",ur:"تفصیل",or:"ବର୍ଣ୍ଣନା",as:"বিৱৰণ"},
+  t_dmonth:{en:"This Month",hi:"इस महीने",mr:"या महिन्यात",ta:"இந்த மாதம்",te:"ఈ నెల",bn:"এই মাস",gu:"આ મહિને",kn:"ಈ ತಿಂಗಳು",ml:"ഈ മാസം",pa:"ਇਸ ਮਹੀਨੇ",ur:"اس مہینے",or:"ଏହି ମାସ",as:"এই মাহ"},
+  t_dtoday:{en:"Today",hi:"आज",mr:"आज",ta:"இன்று",te:"ఈరోజు",bn:"আজ",gu:"આજે",kn:"ಇಂದು",ml:"ഇന്ന്",pa:"ਅੱਜ",ur:"آج",or:"ଆଜି",as:"আজি"},
+  t_dweek:{en:"This Week",hi:"इस सप्ताह",mr:"या आठवड्यात",ta:"இந்த வாரம்",te:"ఈ వారం",bn:"এই সপ্তাহ",gu:"આ અઠવાડિયે",kn:"ಈ ವಾರ",ml:"ഈ ആഴ്ച",pa:"ਇਸ ਹਫ਼ਤੇ",ur:"اس ہفتے",or:"ଏହି ସପ୍ତାହ",as:"এই সপ্তাহ"},
+  t_expcsv:{en:"⬇️ Export Expenses CSV",hi:"⬇️ खर्च CSV निर्यात करें",mr:"⬇️ खर्च CSV एक्सपोर्ट करा",ta:"⬇️ செலவு CSV ஏற்றுமதி",te:"⬇️ ఖర్చుల CSV ఎగుమతి",bn:"⬇️ খরচ CSV এক্সপোর্ট করুন",gu:"⬇️ ખર્ચ CSV નિકાસ કરો",kn:"⬇️ ಖರ್ಚು CSV ರಫ್ತು ಮಾಡಿ",ml:"⬇️ ചെലവ് CSV എക്‌സ്‌പോർട്ട്",pa:"⬇️ ਖਰਚ CSV ਐਕਸਪੋਰਟ ਕਰੋ",ur:"⬇️ اخراجات CSV ایکسپورٹ کریں",or:"⬇️ ଖର୍ଚ୍ଚ CSV ରପ୍ତାନି",as:"⬇️ খৰচ CSV ৰপ্তানি"},
+  t_expense:{en:"Expenses",hi:"खर्च",mr:"खर्च",ta:"செலவுகள்",te:"ఖర్చులు",bn:"খরচ",gu:"ખર્ચ",kn:"ಖರ್ಚುಗಳು",ml:"ചെലവുകൾ",pa:"ਖਰਚੇ",ur:"اخراجات",or:"ଖର୍ଚ୍ଚ",as:"খৰচ"},
+  t_expenses:{en:"Expenses",hi:"खर्च",mr:"खर्च",ta:"செலவுகள்",te:"ఖర్చులు",bn:"খরচ",gu:"ખર્ચ",kn:"ಖರ್ಚುಗಳು",ml:"ചെലവുകൾ",pa:"ਖਰਚੇ",ur:"اخراجات",or:"ଖର୍ଚ୍ଚ",as:"খৰচ"},
+  t_export:{en:"Export Data",hi:"डेटा निर्यात करें",mr:"डेटा एक्सपोर्ट करा",ta:"தரவை ஏற்றுமதி செய்",te:"డేటాను ఎగుమతి చేయండి",bn:"ডেটা এক্সপোর্ট করুন",gu:"ડેટા નિકાસ કરો",kn:"ಡೇಟಾ ರಫ್ತು ಮಾಡಿ",ml:"ഡാറ്റ എക്‌സ്‌പോർട്ട് ചെയ്യുക",pa:"ਡਾਟਾ ਐਕਸਪੋਰਟ ਕਰੋ",ur:"ڈیٹا ایکسپورٹ کریں",or:"ତଥ୍ୟ ରପ୍ତାନି କରନ୍ତୁ",as:"ডাটা ৰপ্তানি কৰক"},
+  t_goalicon:{en:"Icon",hi:"आइकन",mr:"चिन्ह",ta:"ஐகான்",te:"చిహ్నం",bn:"আইকন",gu:"આઇકોન",kn:"ಐಕಾನ್",ml:"ഐക്കൺ",pa:"ਆਈਕਨ",ur:"آئیکن",or:"ଆଇକନ୍",as:"আইকন"},
+  t_goalname:{en:"Goal Name",hi:"लक्ष्य का नाम",mr:"ध्येयाचे नाव",ta:"இலக்கு பெயர்",te:"లక్ష్యం పేరు",bn:"লক্ষ্যের নাম",gu:"લક્ષ્યનું નામ",kn:"ಗುರಿಯ ಹೆಸರು",ml:"ലക്ഷ്യത്തിന്റെ പേര്",pa:"ਟੀਚੇ ਦਾ ਨਾਮ",ur:"ہدف کا نام",or:"ଲକ୍ଷ୍ୟ ନାମ",as:"লক্ষ্যৰ নাম"},
+  t_goalsaved:{en:"Already Saved (₹)",hi:"अब तक बचत (₹)",mr:"आधीच जमा (₹)",ta:"ஏற்கனவே சேமிக்கப்பட்டது (₹)",te:"ఇప్పటికే పొదుపు చేసినది (₹)",bn:"ইতিমধ্যে সঞ্চিত (₹)",gu:"પહેલેથી બચત (₹)",kn:"ಈಗಾಗಲೇ ಉಳಿಸಿದ್ದು (₹)",ml:"ഇതിനകം സേവ് ചെയ്തത് (₹)",pa:"ਪਹਿਲਾਂ ਤੋਂ ਬਚਤ (₹)",ur:"پہلے سے بچت شدہ (₹)",or:"ପୂର୍ବରୁ ସଞ୍ଚିତ (₹)",as:"ইতিমধ্যে সঞ্চিত (₹)"},
+  t_goalsh:{en:"🎯 Savings Goals",hi:"🎯 बचत लक्ष्य",mr:"🎯 बचत ध्येये",ta:"🎯 சேமிப்பு இலக்குகள்",te:"🎯 పొదుపు లక్ష్యాలు",bn:"🎯 সঞ্চয় লক্ষ্য",gu:"🎯 બચત લક્ષ્યો",kn:"🎯 ಉಳಿತಾಯ ಗುರಿಗಳು",ml:"🎯 സമ്പാദ്യ ലക്ഷ്യങ്ങൾ",pa:"🎯 ਬਚਤ ਟੀਚੇ",ur:"🎯 بچت کے اہداف",or:"🎯 ସଞ୍ଚୟ ଲକ୍ଷ୍ୟ",as:"🎯 সঞ্চয় লক্ষ্য"},
+  t_goaltarget:{en:"Target (₹)",hi:"लक्ष्य राशि (₹)",mr:"लक्ष्य रक्कम (₹)",ta:"இலக்கு (₹)",te:"లక్ష్యం (₹)",bn:"লক্ষ্যমাত্রা (₹)",gu:"લક્ષ્ય રકમ (₹)",kn:"ಗುರಿ (₹)",ml:"ലക്ഷ്യം (₹)",pa:"ਟੀਚਾ (₹)",ur:"ہدف (₹)",or:"ଲକ୍ଷ୍ୟ (₹)",as:"লক্ষ্য (₹)"},
+  t_gorecur:{en:"🔔 Recurring",hi:"🔔 आवर्ती",mr:"🔔 आवर्ती",ta:"🔔 மீண்டும் நிகழும்",te:"🔔 పునరావృత",bn:"🔔 পুনরাবৃত্ত",gu:"🔔 પુનરાવર્તિત",kn:"🔔 ಮರುಕಳಿಸುವ",ml:"🔔 ആവർത്തിക്കുന്നത്",pa:"🔔 ਆਵਰਤੀ",ur:"🔔 بار بار ہونے والے",or:"🔔 ପୁନରାବୃତ୍ତ",as:"🔔 পুনৰাবৃত্তিমূলক"},
+  t_high:{en:"High",hi:"अधिक",mr:"जास्त",ta:"அதிகம்",te:"ఎక్కువ",bn:"বেশি",gu:"વધુ",kn:"ಹೆಚ್ಚು",ml:"കൂടുതൽ",pa:"ਵੱਧ",ur:"زیادہ",or:"ଅଧିକ",as:"বেছি"},
+  t_highday:{en:"Highest Spending Day",hi:"सबसे अधिक खर्च का दिन",mr:"सर्वाधिक खर्चाचा दिवस",ta:"அதிக செலவு நாள்",te:"అత్యధిక ఖర్చు రోజు",bn:"সর্বোচ্চ খরচের দিন",gu:"સૌથી વધુ ખર્ચનો દિવસ",kn:"ಅತಿ ಹೆಚ್ಚು ಖರ್ಚಿನ ದಿನ",ml:"ഏറ്റവും കൂടുതൽ ചെലവുള്ള ദിവസം",pa:"ਸਭ ਤੋਂ ਵੱਧ ਖਰਚ ਦਾ ਦਿਨ",ur:"سب سے زیادہ خرچ کا دن",or:"ସର୍ବାଧିକ ଖର୍ଚ୍ଚ ଦିନ",as:"আটাইতকৈ বেছি খৰচৰ দিন"},
+  t_inccsv:{en:"⬇️ Export Income CSV",hi:"⬇️ आय CSV निर्यात करें",mr:"⬇️ उत्पन्न CSV एक्सपोर्ट करा",ta:"⬇️ வருமானம் CSV ஏற்றுமதி",te:"⬇️ ఆదాయం CSV ఎగుమతి",bn:"⬇️ আয় CSV এক্সপোর্ট করুন",gu:"⬇️ આવક CSV નિકાસ કરો",kn:"⬇️ ಆದಾಯ CSV ರಫ್ತು ಮಾಡಿ",ml:"⬇️ വരുമാനം CSV എക്‌സ്‌പോർട്ട്",pa:"⬇️ ਆਮਦਨ CSV ਐਕਸਪੋਰਟ ਕਰੋ",ur:"⬇️ آمدنی CSV ایکسپورٹ کریں",or:"⬇️ ଆୟ CSV ରପ୍ତାନି",as:"⬇️ আয় CSV ৰপ্তানি"},
+  t_income:{en:"Income",hi:"आय",mr:"उत्पन्न",ta:"வருமானம்",te:"ఆదాయం",bn:"আয়",gu:"આવક",kn:"ಆದಾಯ",ml:"വരുമാനം",pa:"ਆਮਦਨ",ur:"آمدنی",or:"ଆୟ",as:"আয়"},
+  t_incomes:{en:"Income",hi:"आय",mr:"उत्पन्न",ta:"வருமானம்",te:"ఆదాయం",bn:"আয়",gu:"આવક",kn:"ಆದಾಯ",ml:"വരുമാനം",pa:"ਆਮਦਨ",ur:"آمدنی",or:"ଆୟ",as:"আয়"},
+  t_incvsexp:{en:"Income vs Expense — last 6 months",hi:"आय बनाम खर्च — पिछले 6 महीने",mr:"उत्पन्न वि. खर्च — मागील ६ महिने",ta:"வருமானம் vs செலவு — கடந்த 6 மாதங்கள்",te:"ఆదాయం vs ఖర్చు — గత 6 నెలలు",bn:"আয় বনাম খরচ — গত ৬ মাস",gu:"આવક વિ. ખર્ચ — છેલ્લા 6 મહિના",kn:"ಆದಾಯ vs ಖರ್ಚು — ಕಳೆದ 6 ತಿಂಗಳು",ml:"വരുമാനം vs ചെലവ് — കഴിഞ്ഞ 6 മാസം",pa:"ਆਮਦਨ ਬਨਾਮ ਖਰਚ — ਪਿਛਲੇ 6 ਮਹੀਨੇ",ur:"آمدنی بمقابلہ اخراجات — پچھلے 6 مہینے",or:"ଆୟ vs ଖର୍ଚ୍ଚ — ଗତ 6 ମାସ",as:"আয় bs খৰচ — যোৱা 6 মাহ"},
+  t_insight1:{en:"Insight",hi:"जानकारी",mr:"माहिती",ta:"கண்ணோட்டம்",te:"అంతర్దృష్టి",bn:"অন্তর্দৃষ্টি",gu:"સૂઝ",kn:"ಒಳನೋಟ",ml:"ഉൾക്കാഴ്ച",pa:"ਸੂਝ",ur:"بصیرت",or:"ଅନ୍ତର୍ଦୃଷ୍ଟି",as:"অন্তৰ্দৃষ্টি"},
+  t_insights:{en:"📈 Insights",hi:"📈 जानकारियाँ",mr:"📈 माहिती",ta:"📈 நுண்ணறிவுகள்",te:"📈 అంతర్దృష్టులు",bn:"📈 অন্তর্দৃষ্টি",gu:"📈 સૂઝ",kn:"📈 ಒಳನೋಟಗಳು",ml:"📈 ഉൾക്കാഴ്ചകൾ",pa:"📈 ਸੂਝਾਂ",ur:"📈 بصیرتیں",or:"📈 ଅନ୍ତର୍ଦୃଷ୍ଟି",as:"📈 অন্তৰ্দৃষ্টি"},
+  t_lang:{en:"Language",hi:"भाषा",mr:"भाषा",ta:"மொழி",te:"భాష",bn:"ভাষা",gu:"ભાષા",kn:"ಭಾಷೆ",ml:"ഭാഷ",pa:"ਭਾਸ਼ਾ",ur:"زبان",or:"ଭାଷା",as:"ভাষা"},
+  t_langnote:{en:"All menus and labels are translated. The AI Assistant's replies are shown in English.",hi:"सभी मेनू और लेबल अनुवादित हैं। AI सहायक के उत्तर अंग्रेज़ी में दिखाए जाते हैं।",mr:"सर्व मेनू आणि लेबल्सचे भाषांतर केले आहे. AI सहाय्यकाची उत्तरे इंग्रजीत दाखवली जातात.",ta:"அனைத்து மெனுக்களும் லேபிள்களும் மொழிபெயர்க்கப்பட்டுள்ளன. AI உதவியாளரின் பதில்கள் ஆங்கிலத்தில் காட்டப்படும்.",te:"అన్ని మెనూలు మరియు లేబుళ్లు అనువదించబడ్డాయి. AI సహాయకుని సమాధానాలు ఇంగ్లీష్‌లో చూపబడతాయి.",bn:"সমস্ত মেনু এবং লেবেল অনুবাদ করা হয়েছে। AI সহায়কের উত্তর ইংরেজিতে দেখানো হয়।",gu:"બધા મેનુ અને લેબલ્સનું ભાષાંતર થયેલ છે. AI સહાયકના જવાબો અંગ્રેજીમાં બતાવવામાં આવે છે.",kn:"ಎಲ್ಲಾ ಮೆನುಗಳು ಮತ್ತು ಲೇಬಲ್‌ಗಳನ್ನು ಅನುವಾದಿಸಲಾಗಿದೆ. AI ಸಹಾಯಕದ ಉತ್ತರಗಳನ್ನು ಇಂಗ್ಲಿಷ್‌ನಲ್ಲಿ ತೋರಿಸಲಾಗುತ್ತದೆ.",ml:"എല്ലാ മെനുകളും ലേബലുകളും വിവർത്തനം ചെയ്തിട്ടുണ്ട്. AI അസിസ്റ്റന്റിന്റെ മറുപടികൾ ഇംഗ്ലീഷിൽ കാണിക്കും.",pa:"ਸਾਰੇ ਮੀਨੂ ਅਤੇ ਲੇਬਲ ਅਨੁਵਾਦ ਕੀਤੇ ਗਏ ਹਨ। AI ਸਹਾਇਕ ਦੇ ਜਵਾਬ ਅੰਗਰੇਜ਼ੀ ਵਿੱਚ ਦਿਖਾਏ ਜਾਂਦੇ ਹਨ।",ur:"تمام مینو اور لیبل کا ترجمہ کر دیا گیا ہے۔ AI اسسٹنٹ کے جوابات انگریزی میں دکھائے جاتے ہیں۔",or:"ସମସ୍ତ ମେନୁ ଏବଂ ଲେବଲ୍ ଅନୁବାଦିତ। AI ସହାୟକଙ୍କ ଉତ୍ତର ଇଂରାଜୀରେ ଦେଖାଯାଏ।",as:"সকলো মেনু আৰু লেবেল অনুবাদ কৰা হৈছে। AI সহায়কৰ উত্তৰ ইংৰাজীত দেখুওৱা হয়।"},
+  t_low:{en:"Low",hi:"कम",mr:"कमी",ta:"குறைவு",te:"తక్కువ",bn:"কম",gu:"ઓછું",kn:"ಕಡಿಮೆ",ml:"കുറവ്",pa:"ਘੱਟ",ur:"کم",or:"କମ୍",as:"কম"},
+  t_month:{en:"This Month",hi:"इस महीने",mr:"या महिन्यात",ta:"இந்த மாதம்",te:"ఈ నెల",bn:"এই মাস",gu:"આ મહિને",kn:"ಈ ತಿಂಗಳು",ml:"ഈ മാസം",pa:"ਇਸ ਮਹੀਨੇ",ur:"اس مہینے",or:"ଏହି ମାସ",as:"এই মাহ"},
+  t_month2:{en:"Month",hi:"महीना",mr:"महिना",ta:"மாதம்",te:"నెల",bn:"মাস",gu:"મહિનો",kn:"ತಿಂಗಳು",ml:"മാസം",pa:"ਮਹੀਨਾ",ur:"مہینہ",or:"ମାସ",as:"মাহ"},
+  t_monthly:{en:"Monthly",hi:"मासिक",mr:"मासिक",ta:"மாதாந்திரம்",te:"మాసిక",bn:"মাসিক",gu:"માસિક",kn:"ಮಾಸಿಕ",ml:"പ്രതിമാസം",pa:"ਮਾਸਿਕ",ur:"ماہانہ",or:"ମାସିକ",as:"মাহেকীয়া"},
+  t_navan:{en:"Analytics",hi:"विश्लेषण",mr:"विश्लेषण",ta:"பகுப்பாய்வு",te:"విశ్లేషణ",bn:"বিশ্লেষণ",gu:"વિશ્લેષણ",kn:"ವಿಶ್ಲೇಷಣೆ",ml:"അനലിറ്റിക്‌സ്",pa:"ਵਿਸ਼ਲੇਸ਼ਣ",ur:"تجزیات",or:"ବିଶ୍ଳେଷଣ",as:"বিশ্লেষণ"},
+  t_navgoals:{en:"Goals",hi:"लक्ष्य",mr:"ध्येये",ta:"இலக்குகள்",te:"లక్ష్యాలు",bn:"লক্ষ্য",gu:"લક્ષ્યો",kn:"ಗುರಿಗಳು",ml:"ലക്ഷ്യങ്ങൾ",pa:"ਟੀਚੇ",ur:"اہداف",or:"ଲକ୍ଷ୍ୟ",as:"লক্ষ্য"},
+  t_navhome:{en:"Home",hi:"होम",mr:"मुख्यपृष्ठ",ta:"முகப்பு",te:"హోమ్",bn:"হোম",gu:"હોમ",kn:"ಮುಖಪುಟ",ml:"ഹോം",pa:"ਹੋਮ",ur:"ہوم",or:"ହୋମ",as:"হোম"},
+  t_navset:{en:"Settings",hi:"सेटिंग्स",mr:"सेटिंग्ज",ta:"அமைப்புகள்",te:"సెట్టింగ్‌లు",bn:"সেটিংস",gu:"સેટિંગ્સ",kn:"ಸೆಟ್ಟಿಂಗ್‌ಗಳು",ml:"ക്രമീകരണങ്ങൾ",pa:"ਸੈਟਿੰਗਾਂ",ur:"ترتیبات",or:"ସେଟିଂସ",as:"ছেটিংছ"},
+  t_navtx:{en:"Transactions",hi:"लेनदेन",mr:"व्यवहार",ta:"பரிவர்த்தனைகள்",te:"లావాదేవీలు",bn:"লেনদেন",gu:"વ્યવહારો",kn:"ವಹಿವಾಟುಗಳು",ml:"ഇടപാടുകൾ",pa:"ਲੈਣ-ਦੇਣ",ur:"لین دین",or:"କାରବାର",as:"লেনদেন"},
+  t_newgoal:{en:"➕ New Goal",hi:"➕ नया लक्ष्य",mr:"➕ नवीन ध्येय",ta:"➕ புதிய இலக்கு",te:"➕ కొత్త లక్ష్యం",bn:"➕ নতুন লক্ষ্য",gu:"➕ નવું લક્ષ્ય",kn:"➕ ಹೊಸ ಗುರಿ",ml:"➕ പുതിയ ലക്ഷ്യം",pa:"➕ ਨਵਾਂ ਟੀਚਾ",ur:"➕ نیا ہدف",or:"➕ ନୂତନ ଲକ୍ଷ୍ୟ",as:"➕ নতুন লক্ষ্য"},
+  t_newrecur:{en:"➕ Add Recurring",hi:"➕ आवर्ती जोड़ें",mr:"➕ आवर्ती जोडा",ta:"➕ மீண்டும் நிகழும் சேர்",te:"➕ పునరావృతం జోడించండి",bn:"➕ পুনরাবৃত্ত যোগ করুন",gu:"➕ પુનરાવર્તિત ઉમેરો",kn:"➕ ಮರುಕಳಿಸುವಿಕೆ ಸೇರಿಸಿ",ml:"➕ ആവർത്തനം ചേർക്കുക",pa:"➕ ਆਵਰਤੀ ਸ਼ਾਮਲ ਕਰੋ",ur:"➕ تکراری شامل کریں",or:"➕ ପୁନରାବୃତ୍ତ ଯୋଗ କରନ୍ତୁ",as:"➕ পুনৰাবৃত্তি যোগ কৰক"},
+  t_paymethod:{en:"Payment Method",hi:"भुगतान का तरीका",mr:"पेमेंट पद्धत",ta:"கட்டண முறை",te:"చెల్లింపు విధానం",bn:"পেমেন্ট পদ্ধতি",gu:"ચુકવણી પદ્ધતિ",kn:"ಪಾವತಿ ವಿಧಾನ",ml:"പേയ്‌മെന്റ് രീതി",pa:"ਭੁਗਤਾਨ ਢੰਗ",ur:"ادائیگی کا طریقہ",or:"ଦେୟ ପଦ୍ଧତି",as:"পৰিশোধ পদ্ধতি"},
+  t_pulse:{en:"Spending Pulse",hi:"खर्च का रुझान",mr:"खर्चाचा कल",ta:"செலவு போக்கு",te:"ఖర్చు ధోరణి",bn:"খরচের ধারা",gu:"ખર્ચનું વલણ",kn:"ಖರ್ಚಿನ ಪ್ರವೃತ್ತಿ",ml:"ചെലവ് പ്രവണത",pa:"ਖਰਚ ਰੁਝਾਨ",ur:"اخراجات کا رجحان",or:"ଖର୍ଚ୍ଚ ଧାରା",as:"খৰচৰ প্ৰৱণতা"},
+  t_pulsesub:{en:"— last 15 days",hi:"— पिछले 15 दिन",mr:"— मागील १५ दिवस",ta:"— கடந்த 15 நாட்கள்",te:"— గత 15 రోజులు",bn:"— গত ১৫ দিন",gu:"— છેલ્લા 15 દિવસ",kn:"— ಕಳೆದ 15 ದಿನಗಳು",ml:"— കഴിഞ്ഞ 15 ദിവസം",pa:"— ਪਿਛਲੇ 15 ਦਿਨ",ur:"— پچھلے 15 دن",or:"— ଗତ 15 ଦିନ",as:"— যোৱা 15 দিন"},
+  t_quick:{en:"Quick Actions",hi:"त्वरित कार्य",mr:"जलद क्रिया",ta:"விரைவு செயல்கள்",te:"త్వరిత చర్యలు",bn:"দ্রুত কাজ",gu:"ઝડપી ક્રિયાઓ",kn:"ತ್ವರಿತ ಕ್ರಿಯೆಗಳು",ml:"ദ്രുത പ്രവർത്തനങ്ങൾ",pa:"ਤੁਰੰਤ ਕਾਰਵਾਈਆਂ",ur:"فوری اقدامات",or:"ଦ୍ରୁତ କାର୍ଯ୍ୟ",as:"সোনকালে কাম"},
+  t_recuramt:{en:"Amount (₹)",hi:"राशि (₹)",mr:"रक्कम (₹)",ta:"தொகை (₹)",te:"మొత్తం (₹)",bn:"পরিমাণ (₹)",gu:"રકમ (₹)",kn:"ಮೊತ್ತ (₹)",ml:"തുക (₹)",pa:"ਰਕਮ (₹)",ur:"رقم (₹)",or:"ପରିମାଣ (₹)",as:"পৰিমাণ (₹)"},
+  t_recurcat:{en:"Category",hi:"श्रेणी",mr:"श्रेणी",ta:"வகை",te:"వర్గం",bn:"বিভাগ",gu:"શ્રેણી",kn:"ವರ್ಗ",ml:"വിഭാഗം",pa:"ਸ਼੍ਰੇਣੀ",ur:"زمرہ",or:"ବର୍ଗ",as:"শ্ৰেণী"},
+  t_recurfreq:{en:"Frequency",hi:"आवृत्ति",mr:"वारंवारता",ta:"அதிர்வெண்",te:"ఫ్రీక్వెన్సీ",bn:"ফ্রিকোয়েন্সি",gu:"આવર્તન",kn:"ಆವರ್ತನ",ml:"ആവൃത്തി",pa:"ਬਾਰੰਬਾਰਤਾ",ur:"تعدد",or:"ପୁନରାବୃତ୍ତି",as:"পুনৰাবৃত্তি"},
+  t_recurh:{en:"🔔 Recurring Expenses",hi:"🔔 आवर्ती खर्च",mr:"🔔 आवर्ती खर्च",ta:"🔔 மீண்டும் நிகழும் செலவுகள்",te:"🔔 పునరావృత ఖర్చులు",bn:"🔔 পুনরাবৃত্ত খরচ",gu:"🔔 પુનરાવર્તિત ખર્ચ",kn:"🔔 ಮರುಕಳಿಸುವ ಖರ್ಚುಗಳು",ml:"🔔 ആവർത്തിക്കുന്ന ചെലവുകൾ",pa:"🔔 ਆਵਰਤੀ ਖਰਚੇ",ur:"🔔 بار بار ہونے والے اخراجات",or:"🔔 ପୁନରାବୃତ୍ତ ଖର୍ଚ୍ଚ",as:"🔔 পুনৰাবৃত্তিমূলক খৰচ"},
+  t_recurname:{en:"Name",hi:"नाम",mr:"नाव",ta:"பெயர்",te:"పేరు",bn:"নাম",gu:"નામ",kn:"ಹೆಸರು",ml:"പേര്",pa:"ਨਾਮ",ur:"نام",or:"ନାମ",as:"নাম"},
+  t_recurnext:{en:"Next Due Date",hi:"अगली तारीख",mr:"पुढील देय तारीख",ta:"அடுத்த செலுத்த வேண்டிய தேதி",te:"తదుపరి గడువు తేదీ",bn:"পরবর্তী দেয় তারিখ",gu:"આગામી ચુકવણી તારીખ",kn:"ಮುಂದಿನ ಬಾಕಿ ದಿನಾಂಕ",ml:"അടുത്ത അടയ്‌ക്കേണ്ട തീയതി",pa:"ਅਗਲੀ ਬਕਾਇਆ ਮਿਤੀ",ur:"اگلی مقررہ تاریخ",or:"ପରବର୍ତ୍ତୀ ଦେୟ ତାରିଖ",as:"পৰৱৰ্তী পৰিশোধৰ তাৰিখ"},
+  t_recurtitle:{en:"Add Recurring Expense",hi:"आवर्ती खर्च जोड़ें",mr:"आवर्ती खर्च जोडा",ta:"மீண்டும் நிகழும் செலவைச் சேர்",te:"పునరావృత ఖర్చును జోడించండి",bn:"পুনরাবৃত্ত খরচ যোগ করুন",gu:"પુનરાવર્તિત ખર્ચ ઉમેરો",kn:"ಮರುಕಳಿಸುವ ಖರ್ಚು ಸೇರಿಸಿ",ml:"ആവർത്തിക്കുന്ന ചെലവ് ചേർക്കുക",pa:"ਆਵਰਤੀ ਖਰਚ ਸ਼ਾਮਲ ਕਰੋ",ur:"تکراری خرچ شامل کریں",or:"ପୁନରାବୃତ୍ତ ଖର୍ଚ୍ଚ ଯୋଗ କରନ୍ତୁ",as:"পুনৰাবৃত্তি খৰচ যোগ কৰক"},
+  t_reset:{en:"🗑 Reset All Data",hi:"🗑 सभी डेटा रीसेट करें",mr:"🗑 सर्व डेटा रीसेट करा",ta:"🗑 அனைத்து தரவையும் மீட்டமை",te:"🗑 మొత్తం డేటాను రీసెట్ చేయండి",bn:"🗑 সব ডেটা রিসেট করুন",gu:"🗑 બધો ડેટા રીસેટ કરો",kn:"🗑 ಎಲ್ಲಾ ಡೇಟಾ ಮರುಹೊಂದಿಸಿ",ml:"🗑 എല്ലാ ഡാറ്റയും റീസെറ്റ് ചെയ്യുക",pa:"🗑 ਸਾਰਾ ਡਾਟਾ ਰੀਸੈਟ ਕਰੋ",ur:"🗑 تمام ڈیٹا ری سیٹ کریں",or:"🗑 ସମସ୍ତ ତଥ୍ୟ ରିସେଟ୍ କରନ୍ତୁ",as:"🗑 সকলো ডাটা ৰিছেট কৰক"},
+  t_save:{en:"Save",hi:"सहेजें",mr:"जतन करा",ta:"சேமி",te:"సేవ్ చేయండి",bn:"সংরক্ষণ করুন",gu:"સાચવો",kn:"ಉಳಿಸಿ",ml:"സേവ് ചെയ്യുക",pa:"ਸੰਭਾਲੋ",ur:"محفوظ کریں",or:"ସେଭ୍ କରନ୍ତୁ",as:"সংৰক্ষণ কৰক"},
+  t_save2:{en:"Save Goal",hi:"लक्ष्य सहेजें",mr:"ध्येय जतन करा",ta:"இலக்கைச் சேமி",te:"లక్ష్యాన్ని సేవ్ చేయండి",bn:"লক্ষ্য সংরক্ষণ করুন",gu:"લક્ષ્ય સાચવો",kn:"ಗುರಿಯನ್ನು ಉಳಿಸಿ",ml:"ലക്ഷ്യം സേവ് ചെയ്യുക",pa:"ਟੀਚਾ ਸੰਭਾਲੋ",ur:"ہدف محفوظ کریں",or:"ଲକ୍ଷ୍ୟ ସେଭ୍ କରନ୍ତୁ",as:"লক্ষ্য সংৰক্ষণ কৰক"},
+  t_save3:{en:"Save",hi:"सहेजें",mr:"जतन करा",ta:"சேமி",te:"సేవ్ చేయండి",bn:"সংরক্ষণ করুন",gu:"સાચવો",kn:"ಉಳಿಸಿ",ml:"സേവ് ചെയ്യുക",pa:"ਸੰਭਾਲੋ",ur:"محفوظ کریں",or:"ସେଭ୍ କରନ୍ତୁ",as:"সংৰক্ষণ কৰক"},
+  t_savings:{en:"Saved",hi:"बचत",mr:"बचत",ta:"சேமிப்பு",te:"పొదుపు",bn:"সঞ্চয়",gu:"બચત",kn:"ಉಳಿತಾಯ",ml:"സമ്പാദ്യം",pa:"ਬਚਤ",ur:"بچت",or:"ସଞ୍ଚୟ",as:"সঞ্চয়"},
+  t_scan:{en:"📷 Scan a receipt (optional)",hi:"📷 रसीद स्कैन करें (वैकल्पिक)",mr:"📷 पावती स्कॅन करा (पर्यायी)",ta:"📷 ரசீதை ஸ்கேன் செய் (விருப்பம்)",te:"📷 రసీదును స్కాన్ చేయండి (ఐచ్ఛికం)",bn:"📷 রসিদ স্ক্যান করুন (ঐচ্ছিক)",gu:"📷 રસીદ સ્કેન કરો (વૈકલ્પિક)",kn:"📷 ರಸೀದಿ ಸ್ಕ್ಯಾನ್ ಮಾಡಿ (ಐಚ್ಛಿಕ)",ml:"📷 രസീത് സ്കാൻ ചെയ്യുക (ഓപ്ഷണൽ)",pa:"📷 ਰਸੀਦ ਸਕੈਨ ਕਰੋ (ਵਿਕਲਪਿਕ)",ur:"📷 رسید اسکین کریں (اختیاری)",or:"📷 ରସିଦ୍ ସ୍କାନ୍ କରନ୍ତୁ (ଇଚ୍ଛାଧୀନ)",as:"📷 ৰচিদ স্কেন কৰক (ঐচ্ছিক)"},
+  t_tagline:{en:"Track. Save. Grow.",hi:"ट्रैक करें। बचाएं। बढ़ें।",mr:"ट्रॅक करा. बचत करा. वाढा.",ta:"கண்காணிக்கவும். சேமிக்கவும். வளரவும்.",te:"ట్రాక్ చేయండి. పొదుపు చేయండి. ఎదగండి.",bn:"ট্র্যাক করুন। সঞ্চয় করুন। বৃদ্ধি পান।",gu:"ટ્રેક કરો. બચત કરો. વિકાસ કરો.",kn:"ಟ್ರ್ಯಾಕ್ ಮಾಡಿ. ಉಳಿಸಿ. ಬೆಳೆಯಿರಿ.",ml:"ട്രാക്ക് ചെയ്യുക. സേവ് ചെയ്യുക. വളരുക.",pa:"ਟਰੈਕ ਕਰੋ। ਬਚਤ ਕਰੋ। ਵਧੋ।",ur:"ٹریک کریں۔ بچائیں۔ بڑھیں۔",or:"ଟ୍ରାକ୍ କରନ୍ତୁ। ସଞ୍ଚୟ କରନ୍ତୁ। ବଢ଼ନ୍ତୁ।",as:"ট্ৰেক কৰক। সঞ্চয় কৰক। বৃদ্ধি পাওক।"},
+  t_today:{en:"Today",hi:"आज",mr:"आज",ta:"இன்று",te:"ఈరోజు",bn:"আজ",gu:"આજે",kn:"ಇಂದು",ml:"ഇന്ന്",pa:"ਅੱਜ",ur:"آج",or:"ଆଜି",as:"আজি"},
+  t_top5:{en:"Top 5 Categories",hi:"शीर्ष 5 श्रेणियाँ",mr:"टॉप ५ श्रेणी",ta:"முதல் 5 வகைகள்",te:"టాప్ 5 వర్గాలు",bn:"শীর্ষ ৫ বিভাগ",gu:"ટોચની 5 શ્રેણીઓ",kn:"ಟಾಪ್ 5 ವರ್ಗಗಳು",ml:"ടോപ്പ് 5 വിഭാഗങ്ങൾ",pa:"ਚੋਟੀ ਦੀਆਂ 5 ਸ਼੍ਰੇਣੀਆਂ",ur:"ٹاپ 5 زمرہ جات",or:"ଶୀର୍ଷ 5 ବର୍ଗ",as:"শীৰ্ষ 5 শ্ৰেণী"},
+  t_upcoming:{en:"Upcoming Payments",hi:"आगामी भुगतान",mr:"आगामी पेमेंट्स",ta:"வரவிருக்கும் கட்டணங்கள்",te:"రాబోయే చెల్లింపులు",bn:"আসন্ন পেমেন্ট",gu:"આગામી ચુકવણીઓ",kn:"ಮುಂಬರುವ ಪಾವತಿಗಳು",ml:"വരാനിരിക്കുന്ന പേയ്‌മെന്റുകൾ",pa:"ਆਉਣ ਵਾਲੇ ਭੁਗਤਾਨ",ur:"آنے والی ادائیگیاں",or:"ଆଗାମୀ ଦେୟ",as:"আগন্তুক পৰিশোধ"},
+  t_weekly:{en:"Weekly",hi:"साप्ताहिक",mr:"साप्ताहिक",ta:"வாராந்திரம்",te:"వారానికోసారి",bn:"সাপ্তাহিক",gu:"સાપ્તાહિક",kn:"ಸಾಪ್ತಾಹಿಕ",ml:"പ്രതിവാരം",pa:"ਹਫ਼ਤਾਵਾਰੀ",ur:"ہفتہ وار",or:"ସାପ୍ତାହିକ",as:"সাপ্তাহিক"},
+  t_yearly:{en:"Yearly",hi:"वार्षिक",mr:"वार्षिक",ta:"வருடாந்திரம்",te:"వార్షికం",bn:"বার্ষিক",gu:"વાર્ષિક",kn:"ವಾರ್ಷಿಕ",ml:"വാർഷികം",pa:"ਸਾਲਾਨਾ",ur:"سالانہ",or:"ବାର୍ଷିକ",as:"বাৰ্ষিক"},
+};
+function curLang(){ return DATA.lang||"en"; }
+function T(key, fallback){ return (TXT[key] && TXT[key][curLang()]) || fallback || ""; }
+function setLang(code){
+  DATA.lang=code; persist();
+  document.getElementById("langSel").value=code;
+  Object.keys(TXT).forEach(key=>{
+    let el=document.getElementById(key);
+    if(el){ el.textContent = TXT[key][code] || TXT[key].en; }
+  });
+}
+
+/* ================= RENDER ALL ================= */
+function renderAll(){
+  render();
+  if(document.getElementById("transactions").classList.contains("active")) renderTx();
+  if(document.getElementById("analytics").classList.contains("active")) renderAnalytics();
+  if(document.getElementById("goals").classList.contains("active")) renderGoals();
+  if(document.getElementById("recurring").classList.contains("active")) renderRecurring();
+}
+
+document.getElementById("langSel").value = DATA.lang||"en";
+if(DATA.lang && DATA.lang!=="en") setLang(DATA.lang);
+renderAll();
+renderAccountStatus();
+initAuth();
+</script>
+</body>
+</html>
